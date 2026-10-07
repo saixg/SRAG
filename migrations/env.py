@@ -13,6 +13,8 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from srag.db import models  # noqa: F401
+from srag.db.base import Base
 from srag.settings import get_settings
 
 # Alembic Config object
@@ -26,8 +28,8 @@ if config.config_file_name is not None:
 settings = get_settings()
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
-# Target metadata for autogenerate support (added in later phases)
-target_metadata = None
+# Include portal account metadata in Alembic autogeneration.
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

@@ -1,74 +1,139 @@
 from __future__ import annotations
 
-import hashlib
-import json
+from uuid import uuid4
 
 import pytest
+
+
+class FakeSession:
+    def __init__(self):
+        self.accounts = []
+
+    def add(self, account):
+        self.accounts.append(account)
+
+    async def flush(self):
+        for account in self.accounts:
+            if account.id is None:
+                account.id = uuid4()
+            if account.is_active is None:
+                account.is_active = True
+
+    async def rollback(self):
+        return None
+
+    async def get(self, _model, account_id):
+        return next((row for row in self.accounts if row.id == account_id), None)
 
 
 @pytest.fixture
 async def configured_client(monkeypatch):
     monkeypatch.setenv("SECRET_KEY", "test-secret-key-with-enough-entropy")
-    monkeypatch.setenv("PORTAL_USERS_JSON", "[]")
+    monkeypatch.setenv("PORTAL_SIGNUP_INVITE_CODE", "company-invite-test-code")
     monkeypatch.setenv("CORS_ORIGINS", "http://localhost:5173")
     from srag.settings import get_settings
 
     get_settings.cache_clear()
+
     from httpx import ASGITransport, AsyncClient
 
+    from srag.api import auth
     from srag.app import create_app
+    from srag.db.session import get_db_session
 
+    store = FakeSession()
+
+    async def fake_session():
+        yield store
+
+    async def find_account(_session, identifier):
+        normalized = identifier.strip().casefold()
+        return next(
+            (
+                row
+                for row in store.accounts
+                if normalized in {row.username.casefold(), row.email.casefold()}
+            ),
+            None,
+        )
+
+    application = create_app()
+    application.dependency_overrides[get_db_session] = fake_session
+    monkeypatch.setattr(auth, "_find_account", find_account)
     async with AsyncClient(
-        transport=ASGITransport(app=create_app()), base_url="http://test"
+        transport=ASGITransport(app=application), base_url="http://test"
     ) as client:
         yield client
     get_settings.cache_clear()
 
 
-def account_record(password: str = "CorrectHorseBatteryStaple!") -> dict[str, str]:
-    salt = b"test-only-salt-1234"
-    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 600_000).hex()
-    return {
-        "id": "employee-42",
-        "username": "riley.test",
+async def register_user(client, **overrides):
+    payload = {
         "name": "Riley Test",
+        "username": "riley.test",
         "email": "riley@example.test",
-        "role": "MANAGER",
-        "roleTitle": "Team Manager",
-        "department": "People",
-        "password_hash": f"pbkdf2_sha256$600000${salt.hex()}${digest}",
+        "password": "CorrectHorseBatteryStaple!",
+        "invite_code": "company-invite-test-code",
     }
+    payload.update(overrides)
+    return await client.post(
+        "/api/v1/auth/register", headers={"Origin": "http://localhost:5173"}, json=payload
+    )
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("login_identifier", ["Riley.Test", "Riley@example.test"])
-async def test_password_login_sets_signed_http_only_session(
-    configured_client, monkeypatch, login_identifier
-):
-    from srag.settings import get_settings
-
-    monkeypatch.setenv("PORTAL_USERS_JSON", json.dumps([account_record()]))
-    get_settings.cache_clear()
-    response = await configured_client.post(
-        "/api/v1/auth/login",
-        headers={"Origin": "http://localhost:5173"},
-        json={"username": login_identifier, "password": "CorrectHorseBatteryStaple!"},
-    )
+async def test_registration_creates_employee_and_signed_session(configured_client):
+    response = await register_user(configured_client)
     assert response.status_code == 200
-    assert response.json()["user"]["role"] == "MANAGER"
-    cookie = response.cookies.get("nexus_one_session")
-    assert cookie and "httponly" in response.headers["set-cookie"].lower()
+    assert response.json()["user"]["role"] == "EMPLOYEE"
+    assert "password_hash" not in response.json()["user"]
+    assert "httponly" in response.headers["set-cookie"].lower()
     session = await configured_client.get("/api/v1/auth/session")
     assert session.status_code == 200
     assert session.json()["user"]["email"] == "riley@example.test"
 
 
 @pytest.mark.asyncio
-async def test_password_login_rejects_wrong_password(configured_client, monkeypatch):
-    from srag.settings import get_settings
+async def test_registration_requires_invitation(configured_client):
+    response = await register_user(configured_client, invite_code="wrong-code")
+    assert response.status_code == 403
 
-    monkeypatch.setenv("PORTAL_USERS_JSON", json.dumps([account_record()]))
-    get_settings.cache_clear()
+
+@pytest.mark.asyncio
+async def test_registration_rejects_duplicate_username_or_email(configured_client):
+    first = await register_user(configured_client)
+    assert first.status_code == 200
+    duplicate = await register_user(configured_client, username="other.user")
+    assert duplicate.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_registration_requires_strong_password(configured_client):
+    response = await register_user(configured_client, password="short")
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_password_login_accepts_username_or_email(configured_client):
+    await register_user(configured_client)
+    await configured_client.post("/api/v1/auth/logout", headers={"Origin": "http://localhost:5173"})
+    for identifier in ("Riley.Test", "riley@example.test"):
+        response = await configured_client.post(
+            "/api/v1/auth/login",
+            headers={"Origin": "http://localhost:5173"},
+            json={"username": identifier, "password": "CorrectHorseBatteryStaple!"},
+        )
+        assert response.status_code == 200
+        assert response.json()["user"]["email"] == "riley@example.test"
+        await configured_client.post(
+            "/api/v1/auth/logout", headers={"Origin": "http://localhost:5173"}
+        )
+
+
+@pytest.mark.asyncio
+async def test_password_login_rejects_wrong_password(configured_client):
+    await register_user(configured_client)
+    await configured_client.post("/api/v1/auth/logout", headers={"Origin": "http://localhost:5173"})
     response = await configured_client.post(
         "/api/v1/auth/login",
         headers={"Origin": "http://localhost:5173"},
@@ -79,29 +144,29 @@ async def test_password_login_rejects_wrong_password(configured_client, monkeypa
 
 
 @pytest.mark.asyncio
-async def test_password_login_has_no_automatic_or_demo_account(configured_client):
-    response = await configured_client.post(
+async def test_login_and_registration_reject_unapproved_origin(configured_client):
+    headers = {"Origin": "https://attacker.example"}
+    payload = {
+        "name": "Riley Test",
+        "username": "riley.test",
+        "email": "riley@example.test",
+        "password": "CorrectHorseBatteryStaple!",
+        "invite_code": "company-invite-test-code",
+    }
+    register = await configured_client.post("/api/v1/auth/register", headers=headers, json=payload)
+    login = await configured_client.post(
         "/api/v1/auth/login",
-        headers={"Origin": "http://localhost:5173"},
-        json={"username": "demo", "password": "demo"},
-    )
-    assert response.status_code == 401
-    session = await configured_client.get("/api/v1/auth/session")
-    assert session.status_code == 401
-
-
-@pytest.mark.asyncio
-async def test_password_login_rejects_unapproved_origin(configured_client):
-    response = await configured_client.post(
-        "/api/v1/auth/login",
-        headers={"Origin": "https://attacker.example"},
+        headers=headers,
         json={"username": "riley.test", "password": "password"},
     )
-    assert response.status_code == 403
+    assert register.status_code == 403
+    assert login.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_logout_clears_session_cookie(configured_client):
+async def test_session_requires_login_and_logout_clears_cookie(configured_client):
+    denied = await configured_client.get("/api/v1/auth/session")
+    assert denied.status_code == 401
     response = await configured_client.post(
         "/api/v1/auth/logout", headers={"Origin": "http://localhost:5173"}
     )

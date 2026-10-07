@@ -53,8 +53,8 @@ class Settings(BaseSettings):
     )
 
     # --- Portal username/password authentication ---
-    # JSON array of employee accounts; each account stores only a PBKDF2 password hash.
-    portal_users_json: str = "[]"
+    # Required to prevent uninvited public account creation.
+    portal_signup_invite_code: SecretStr = SecretStr("")
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     auth_session_cookie_name: str = "nexus_one_session"
     auth_session_max_age_seconds: int = Field(default=28800, ge=300, le=2592000)

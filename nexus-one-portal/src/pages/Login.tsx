@@ -2,10 +2,13 @@ import React, { useCallback, useState } from 'react';
 import { Building2, CheckCircle2, LockKeyhole, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+type LoginMode = 'login' | 'register';
+
 export interface LoginProps { onLoginSuccess: () => void; }
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
-  const { isLoading, loginWithPassword } = useAuth();
+  const { isLoading, loginWithPassword, registerAccount } = useAuth();
+  const [mode, setMode] = useState<LoginMode>('login');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const handleLoginSuccess = useCallback(() => onLoginSuccess(), [onLoginSuccess]);
@@ -15,16 +18,33 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError(null);
     setIsSubmitting(true);
     const form = new FormData(event.currentTarget);
-    const username = String(form.get('username') || '').trim();
     const password = String(form.get('password') || '');
     try {
-      await loginWithPassword(username, password);
+      if (mode === 'register') {
+        if (password !== String(form.get('confirmPassword') || '')) {
+          throw new Error('The passwords do not match.');
+        }
+        await registerAccount({
+          name: String(form.get('name') || '').trim(),
+          username: String(form.get('username') || '').trim(),
+          email: String(form.get('email') || '').trim(),
+          password,
+          inviteCode: String(form.get('inviteCode') || ''),
+        });
+      } else {
+        await loginWithPassword(String(form.get('username') || '').trim(), password);
+      }
       handleLoginSuccess();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Sign-in failed. Check your details and try again.');
+      setError(reason instanceof Error ? reason.message : 'Please check your details and try again.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const changeMode = (nextMode: LoginMode) => {
+    setError(null);
+    setMode(nextMode);
   };
 
   return (
@@ -52,24 +72,36 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </div>
         </section>
 
-        <section className="login-panel" aria-label="Sign in">
+        <section className="login-panel" aria-label={mode === 'register' ? 'Create employee account' : 'Sign in'}>
           <div className="login-panel-top"><span className="login-secure"><LockKeyhole size={14} /> COMPANY ACCESS</span><span className="login-step">01 <i /> 01</span></div>
-          <div className="login-panel-heading"><p className="login-eyebrow">WELCOME TO NEXUS ONE</p><h2>Sign in to your workspace</h2><p>Enter the username and password provided by your company.</p></div>
+          <div className="login-panel-heading"><p className="login-eyebrow">WELCOME TO NEXUS ONE</p><h2>{mode === 'register' ? 'Create your account' : 'Sign in to your workspace'}</h2><p>{mode === 'register' ? 'Use your company invitation to set up your employee account.' : 'Enter the username and password provided by your company.'}</p></div>
           {error && <div className="login-error" role="alert">{error}</div>}
           {isLoading ? <div className="login-loading" role="status"><span /> Checking your company session...</div> : (
-            <form className="login-form" onSubmit={handleSubmit}>
-              <label className="login-field" htmlFor="login-username">Username or work email
-                <input id="login-username" name="username" type="text" autoComplete="username" autoCapitalize="none" spellCheck={false} required maxLength={254} />
+            <form className="login-form" onSubmit={handleSubmit} key={mode}>
+              {mode === 'register' && <label className="login-field" htmlFor="register-name">Full name
+                <input id="register-name" name="name" type="text" autoComplete="name" required minLength={2} maxLength={120} />
+              </label>}
+              {mode === 'register' && <label className="login-field" htmlFor="register-email">Work email
+                <input id="register-email" name="email" type="email" autoComplete="email" required maxLength={254} />
+              </label>}
+              <label className="login-field" htmlFor="login-username">{mode === 'register' ? 'Choose a username' : 'Username or work email'}
+                <input id="login-username" name="username" type="text" autoComplete="username" autoCapitalize="none" spellCheck={false} required minLength={mode === 'register' ? 3 : 1} maxLength={254} />
               </label>
               <label className="login-field" htmlFor="login-password">Password
-                <input id="login-password" name="password" type="password" autoComplete="current-password" required maxLength={1024} />
+                <input id="login-password" name="password" type="password" autoComplete={mode === 'register' ? 'new-password' : 'current-password'} required minLength={mode === 'register' ? 12 : 1} maxLength={1024} />
               </label>
-              <button className="login-submit" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Signing in...' : 'Sign in securely'}</button>
+              {mode === 'register' && <label className="login-field" htmlFor="register-confirm-password">Confirm password
+                <input id="register-confirm-password" name="confirmPassword" type="password" autoComplete="new-password" required minLength={12} maxLength={1024} />
+              </label>}
+              {mode === 'register' && <label className="login-field" htmlFor="register-invite">Company invitation code
+                <input id="register-invite" name="inviteCode" type="password" autoComplete="off" required maxLength={128} />
+              </label>}
+              <button className="login-submit" type="submit" disabled={isSubmitting}>{isSubmitting ? (mode === 'register' ? 'Creating account...' : 'Signing in...') : (mode === 'register' ? 'Create employee account' : 'Sign in securely')}</button>
             </form>
           )}
-          <div className="login-divider"><span>SECURE COMPANY SIGN-IN</span></div>
-          <p className="login-privacy">Your identity and access are managed by your company. If you have trouble signing in, contact your workplace administrator.</p>
-          <div className="login-help"><span>Need access?</span><span>Contact your IT or People team</span></div>
+          <div className="login-divider"><span>{mode === 'register' ? 'INVITED EMPLOYEES' : 'SECURE COMPANY SIGN-IN'}</span></div>
+          <p className="login-privacy">{mode === 'register' ? 'Registration requires a company invitation code. Ask your IT or People team if you need one. New accounts receive employee access.' : 'Your identity and access are managed by your company. If you have trouble signing in, contact your workplace administrator.'}</p>
+          <div className="login-help"><span>{mode === 'register' ? 'Already registered?' : 'New to Nexus One?'}</span><button className="login-mode-toggle" type="button" onClick={() => changeMode(mode === 'register' ? 'login' : 'register')}>{mode === 'register' ? 'Sign in' : 'Create an account'}</button></div>
           <p className="login-footnote">Nexus One | Employee workspace</p>
         </section>
       </div>

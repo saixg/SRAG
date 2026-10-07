@@ -6,12 +6,14 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   loginWithPassword: (username: string, password: string) => Promise<User>;
+  registerAccount: (account: { name: string; username: string; email: string; password: string; inviteCode: string }) => Promise<User>;
   logout: () => void;
   updateUserProfile: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AUTH_LOGIN_ENDPOINT = import.meta.env.VITE_AUTH_LOGIN_ENDPOINT as string | undefined;
+const AUTH_REGISTER_ENDPOINT = import.meta.env.VITE_AUTH_REGISTER_ENDPOINT as string | undefined;
 const AUTH_SESSION_ENDPOINT = import.meta.env.VITE_AUTH_SESSION_ENDPOINT as string | undefined;
 const AUTH_LOGOUT_ENDPOINT = import.meta.env.VITE_AUTH_LOGOUT_ENDPOINT as string | undefined;
 const VALID_ROLES: UserRole[] = ['EMPLOYEE', 'MANAGER', 'PEOPLE_OPS', 'ADMINISTRATOR'];
@@ -66,6 +68,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return signedInUser;
   }, []);
 
+  const registerAccount = useCallback(async (account: { name: string; username: string; email: string; password: string; inviteCode: string }): Promise<User> => {
+    if (!AUTH_REGISTER_ENDPOINT) throw new Error('Account registration is not configured. Contact your workplace administrator.');
+    const response = await fetch(AUTH_REGISTER_ENDPOINT, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ name: account.name, username: account.username, email: account.email, password: account.password, invite_code: account.inviteCode }),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(body?.detail || body?.message || 'Your account could not be created.');
+    const createdUser = parseUser(body);
+    if (!createdUser) throw new Error('The registration service returned an incomplete employee profile.');
+    setUser(createdUser);
+    return createdUser;
+  }, []);
+
   const logout = useCallback(() => {
     setUser(null);
     if (AUTH_LOGOUT_ENDPOINT) void fetch(AUTH_LOGOUT_ENDPOINT, { method: 'POST', credentials: 'include' }).catch(() => undefined);
@@ -73,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateUserProfile = (updates: Partial<User>) => setUser(current => current ? { ...current, ...updates } : current);
 
-  return <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, loginWithPassword, logout, updateUserProfile }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, loginWithPassword, registerAccount, logout, updateUserProfile }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
