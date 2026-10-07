@@ -16,8 +16,8 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from srag.api.health import router as health_router
 from srag.api.auth import router as auth_router
+from srag.api.health import router as health_router
 from srag.db.session import close_engine
 from srag.logging import setup_logging
 from srag.settings import get_settings
@@ -53,7 +53,17 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.add_middleware(CORSMiddleware, allow_origins=[origin.strip().rstrip("/") for origin in settings.cors_origins.split(",") if origin.strip()], allow_credentials=True, allow_methods=["GET", "POST"], allow_headers=["Content-Type", "Accept"])
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            origin.strip().rstrip("/")
+            for origin in settings.cors_origins.split(",")
+            if origin.strip()
+        ],
+        allow_credentials=True,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type", "Accept"],
+    )
 
     # --- Routers ---
     app.include_router(health_router, prefix="/api/v1")

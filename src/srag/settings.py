@@ -52,9 +52,9 @@ class Settings(BaseSettings):
         description="Secret key for signing â€” must be replaced in production",
     )
 
-    # --- Google Workspace authentication ---
-    google_client_id: str = ""
-    google_hosted_domain: str = ""
+    # --- Portal username/password authentication ---
+    # JSON array of employee accounts; each account stores only a PBKDF2 password hash.
+    portal_users_json: str = "[]"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     auth_session_cookie_name: str = "nexus_one_session"
     auth_session_max_age_seconds: int = Field(default=28800, ge=300, le=2592000)

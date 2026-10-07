@@ -5,14 +5,13 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  googleSignInConfigured: boolean;
-  loginWithGoogleCredential: (credential: string) => Promise<User>;
+  loginWithPassword: (username: string, password: string) => Promise<User>;
   logout: () => void;
   updateUserProfile: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const GOOGLE_AUTH_ENDPOINT = import.meta.env.VITE_GOOGLE_AUTH_ENDPOINT as string | undefined;
+const AUTH_LOGIN_ENDPOINT = import.meta.env.VITE_AUTH_LOGIN_ENDPOINT as string | undefined;
 const AUTH_SESSION_ENDPOINT = import.meta.env.VITE_AUTH_SESSION_ENDPOINT as string | undefined;
 const AUTH_LOGOUT_ENDPOINT = import.meta.env.VITE_AUTH_LOGOUT_ENDPOINT as string | undefined;
 const VALID_ROLES: UserRole[] = ['EMPLOYEE', 'MANAGER', 'PEOPLE_OPS', 'ADMINISTRATOR'];
@@ -36,7 +35,6 @@ const parseUser = (payload: unknown): User | null => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(AUTH_SESSION_ENDPOINT));
-  const googleSignInConfigured = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID && GOOGLE_AUTH_ENDPOINT && AUTH_SESSION_ENDPOINT);
 
   useEffect(() => {
     if (!AUTH_SESSION_ENDPOINT) return;
@@ -53,22 +51,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => { cancelled = true; };
   }, []);
 
-  const loginWithGoogleCredential = useCallback(async (credential: string): Promise<User> => {
-    if (!GOOGLE_AUTH_ENDPOINT) throw new Error('Google sign-in needs a configured company verification endpoint.');
-    setIsLoading(true);
-    try {
-      const response = await fetch(GOOGLE_AUTH_ENDPOINT, {
+  const loginWithPassword = useCallback(async (username: string, password: string): Promise<User> => {
+    if (!AUTH_LOGIN_ENDPOINT) throw new Error('Employee sign-in is not configured. Contact your workplace administrator.');
+    const response = await fetch(AUTH_LOGIN_ENDPOINT, {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ credential }),
-      });
-      const body = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(body?.detail || body?.message || 'Your company account could not be verified.');
-      const verifiedUser = parseUser(body);
-      if (!verifiedUser) throw new Error('The sign-in service returned an incomplete employee profile.');
-      setUser(verifiedUser);
-      return verifiedUser;
-    } finally { setIsLoading(false); }
+      body: JSON.stringify({ username, password }),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(body?.detail || body?.message || 'Your company account could not be verified.');
+    const signedInUser = parseUser(body);
+    if (!signedInUser) throw new Error('The sign-in service returned an incomplete employee profile.');
+    setUser(signedInUser);
+    return signedInUser;
   }, []);
 
   const logout = useCallback(() => {
@@ -78,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateUserProfile = (updates: Partial<User>) => setUser(current => current ? { ...current, ...updates } : current);
 
-  return <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, googleSignInConfigured, loginWithGoogleCredential, logout, updateUserProfile }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, loginWithPassword, logout, updateUserProfile }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

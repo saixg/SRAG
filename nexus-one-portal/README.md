@@ -1,32 +1,38 @@
 # Nexus One Employee Portal
 
-Nexus One is the React frontend for an employee workspace. The portal includes a sign-in gate and screens for the dashboard, profile, announcements, leave and attendance, payroll, benefits, learning, directory, team workspace, approvals, events, support, and settings.
+Nexus One is the React frontend for an employee workspace. It includes a username/password sign-in gate and screens for the dashboard, profile, announcements, leave and attendance, payroll, benefits, learning, directory, team workspace, approvals, events, support, and settings.
 
 ## Run locally
 
 1. Install Node.js 20.19+ or 22.12+.
 2. From this folder, run `npm install`.
-3. Copy `.env.example` to `.env.local` and set the frontend values.
-4. Start the API and frontend with `npm run dev`.
+3. Copy `.env.example` to `.env.local` and set the API URLs.
+4. Start the backend API from the repository root, then run `npm run dev` here for the frontend.
 
-The frontend uses the sample workspace records in `src/data` for its employee-facing screens. Actions that change these records, such as leave requests or task completion, are local preview interactions; they do not write to an HR system. Google sign-in is verified by the backend API.
+The frontend uses sample workspace records for employee-facing screens. Actions that change these records are local preview interactions and do not write to an HR system.
 
-## Google Workspace sign-in setup
+## Configure employee sign-in
 
-In Google Cloud Console:
+The backend reads employee accounts from `PORTAL_USERS_JSON`. Each account must have a unique username, an ID, name, email, role, and a PBKDF2-SHA256 password hash. Only password hashes belong in this configuration; never place a plaintext password or a sample account in source control.
 
-1. Create or select a Google Cloud project and configure the OAuth consent screen for your organization.
-2. Create an OAuth client with application type **Web application**.
-3. Add the exact frontend origins to **Authorized JavaScript origins** (for local development, `http://localhost:5173` and `http://127.0.0.1:5173`).
-4. Copy the Web Client ID into `VITE_GOOGLE_CLIENT_ID` in `.env.local` and `GOOGLE_CLIENT_ID` in the backend `.env`.
-5. Set `GOOGLE_HOSTED_DOMAIN` on the backend to the company Workspace domain and add the frontend origin to `CORS_ORIGINS`.
-6. Set a strong random `SECRET_KEY` on the backend before deployment. Keep OAuth client secrets and signing secrets on the backend; this ID-token flow only needs the public client ID in the browser.
+Generate a hash with Python (it prompts for the password without including it in the command):
 
-The frontend calls the configured `VITE_GOOGLE_AUTH_ENDPOINT`, `VITE_AUTH_SESSION_ENDPOINT`, and `VITE_AUTH_LOGOUT_ENDPOINT`. The backend exposes `/api/v1/auth/google`, `/api/v1/auth/session`, and `/api/v1/auth/logout`; `/api/v1/health` remains available.
+```powershell
+python -c "import getpass,hashlib,secrets; p=getpass.getpass('New password: '); s=secrets.token_bytes(16); print('pbkdf2_sha256$600000$'+s.hex()+'$'+hashlib.pbkdf2_hmac('sha256',p.encode(),s,600000).hex())"
+```
 
-For production, use HTTPS for the frontend and API, configure the exact production origin in Google Cloud Console and `CORS_ORIGINS`, and store backend secrets in the deployment secret manager.
+Add the resulting hash to a secure deployment environment's `PORTAL_USERS_JSON` value. Example structure (replace all account details and the hash with real provisioned data):
+
+```json
+[{"id":"employee-id","username":"employee.name","name":"Employee Name","email":"employee@company.example","role":"EMPLOYEE","roleTitle":"Employee","department":"People","password_hash":"pbkdf2_sha256$600000$<salt-hex>$<digest-hex>"}]
+```
+
+Allowed roles are `EMPLOYEE`, `MANAGER`, `PEOPLE_OPS`, and `ADMINISTRATOR`. The backend verifies passwords and issues a signed HttpOnly session cookie. Configure a strong random `SECRET_KEY`, the exact frontend origins in `CORS_ORIGINS`, and HTTPS in production. Store account hashes and signing keys in a deployment secret manager, not in Git.
+
+Set `VITE_AUTH_LOGIN_ENDPOINT`, `VITE_AUTH_SESSION_ENDPOINT`, and `VITE_AUTH_LOGOUT_ENDPOINT` in the frontend environment. The backend exposes `/api/v1/auth/login`, `/api/v1/auth/session`, and `/api/v1/auth/logout`; `/api/v1/health` remains available.
 
 ## Checks
 
 - `npm run build` builds the production frontend.
-- `npm run lint` runs Oxlint; the current codebase reports unused-import and purity warnings.
+- `npm run lint` runs Oxlint.
+- `python -m pytest -q` runs backend tests from the repository root.

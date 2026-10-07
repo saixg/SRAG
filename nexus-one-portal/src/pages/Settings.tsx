@@ -201,8 +201,8 @@ export const Settings: React.FC = () => {
             </div>
 
             <div className="lg:col-span-4">
-              <Card title="Company sign-in" subtitle="Your verified Google Workspace identity">
-                <p className="text-xs leading-relaxed text-slate-400">Google verifies your company account before the portal creates a secure, short-lived session. Sign-in access is restricted to your configured Workspace domain.</p>
+              <Card title="Company sign-in" subtitle="Your username and password are verified by the portal service">
+                <p className="text-xs leading-relaxed text-slate-400">Your company administrator provisions your account and manages your access. Contact your IT or People team if you need a password reset.</p>
               </Card>
             </div>
           </div>
