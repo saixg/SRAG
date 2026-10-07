@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "secure-multimodal-rag"
 version = "0.1.0"
-description = "Secure Multimodal RAG — enterprise knowledge platform with permission-aware evidence retrieval"
+description = "Secure Multimodal RAG â€” enterprise knowledge platform with permission-aware evidence retrieval"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
@@ -16,6 +16,7 @@ dependencies = [
     "asyncpg>=0.29.0",
     "alembic>=1.13.0",
     "structlog>=24.1.0",
+    "google-auth[requests]>=2.35.0",
 ]
 
 [project.optional-dependencies]
