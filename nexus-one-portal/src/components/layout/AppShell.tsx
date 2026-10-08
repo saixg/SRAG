@@ -5,7 +5,6 @@ import { BottomNav } from './BottomNav';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { NotificationDrawer } from './NotificationDrawer';
 import { QuickScheduleModal } from './QuickScheduleModal';
-import { AssistantWidget } from './AssistantWidget';
 
 export interface AppShellProps {
   currentRoute: string;
@@ -85,7 +84,6 @@ export const AppShell: React.FC<AppShellProps> = ({
         isOpen={isScheduleOpen}
         onClose={() => setIsScheduleOpen(false)}
       />
-      <AssistantWidget />
     </div>
   );
 };
