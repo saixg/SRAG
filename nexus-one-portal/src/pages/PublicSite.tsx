@@ -57,8 +57,8 @@ const SiteHeader: React.FC<PublicSiteProps> = ({ currentRoute, onNavigate }) => 
     const term = search.trim().toLowerCase();
     if (!term) return [];
     return [
-      ...publicResources.filter(item => `${item.title} ${item.summary} ${item.topic} ${item.type}`.toLowerCase().includes(term)).slice(0, 4).map(item => ({ title: item.title, detail: `${item.type} · ${item.topic}`, path: `/resources#${item.slug}` })),
-      ...publicSolutions.filter(item => `${item.title} ${item.summary} ${item.audience}`.toLowerCase().includes(term)).slice(0, 3).map(item => ({ title: item.title, detail: `Solution · ${item.audience}`, path: `/solutions#${item.id}` })),
+      ...publicResources.filter(item => `${item.title} ${item.summary} ${item.topic} ${item.type}`.toLowerCase().includes(term)).slice(0, 4).map(item => ({ title: item.title, detail: `${item.type} · ${item.topic}`, path: `/resources/${item.slug}` })),
+      ...publicSolutions.filter(item => `${item.title} ${item.summary} ${item.audience}`.toLowerCase().includes(term)).slice(0, 3).map(item => ({ title: item.title, detail: `Solution · ${item.audience}`, path: `/solutions/${item.id}` })),
       ...publicFaqs.filter(item => `${item.question} ${item.answer}`.toLowerCase().includes(term)).slice(0, 2).map(item => ({ title: item.question, detail: 'FAQ', path: '/support' })),
     ].slice(0, 6);
   }, [search]);
@@ -126,11 +126,51 @@ const HomePage: React.FC<PublicSiteProps> = ({ onNavigate }) => {
 
 const SolutionsPage: React.FC<PublicSiteProps> = ({ onNavigate }) => <>
   <PageIntro eyebrow="SOLUTIONS" title="A connected starting point for everyday work" copy="Nexus One brings familiar employee destinations into a single workspace. These are product directions, not claims about live integrations." />
-  <div className="public-page-grid">{publicSolutions.map((solution, index) => <Reveal key={solution.id} delay={index * 60}><article className="public-solution-detail" id={solution.id}><span className="public-card-audience">{solution.audience}</span><h2>{solution.title}</h2><p>{solution.summary}</p><ul>{solution.points.map(point => <li key={point}><Check size={16} />{point}</li>)}</ul><a href="/resources" onClick={event => navigateLink(event, '/resources', onNavigate)}>Read the portal guides <ArrowRight size={15} /></a></article></Reveal>)}</div>
+  <div className="public-page-grid">{publicSolutions.map((solution, index) => <Reveal key={solution.id} delay={index * 60}><article className="public-solution-detail" id={solution.id}><span className="public-card-audience">{solution.audience}</span><h2><a href={`/solutions/${solution.id}`} onClick={event => navigateLink(event, `/solutions/${solution.id}`, onNavigate)}>{solution.title}</a></h2><p>{solution.summary}</p><ul>{solution.points.map(point => <li key={point}><Check size={16} />{point}</li>)}</ul><a href={`/solutions/${solution.id}`} onClick={event => navigateLink(event, `/solutions/${solution.id}`, onNavigate)}>Explore this journey <ArrowRight size={15} /></a></article></Reveal>)}</div>
   <Callout title="Bring your company systems into the conversation" copy="A production rollout needs your identity, HR, payroll, learning, and support systems to be configured by your organization. This preview has no live HR integrations." onNavigate={onNavigate} />
 </>;
 
-const ResourcesPage: React.FC = () => {
+const SolutionDetailPage: React.FC<{ slug: string; onNavigate: (path: string) => void }> = ({ slug, onNavigate }) => {
+  const solution = publicSolutions.find(item => item.id === slug);
+  if (!solution) return <NotFoundPage onNavigate={onNavigate} />;
+  return <>
+    <Breadcrumbs items={[{ label: 'Solutions', path: '/solutions' }, { label: solution.audience }]} onNavigate={onNavigate} />
+    <PageIntro eyebrow={solution.audience} title={solution.title} copy={solution.summary} />
+    <section className="public-detail-article">
+      <span className="public-eyebrow">IN THE NEXUS ONE PREVIEW</span>
+      <h2>A clearer path through everyday work</h2>
+      <p>This journey describes how the preview organizes employee destinations. Available services and the information shown depend on the organization’s connected systems and access policies.</p>
+      <ul className="public-detail-list">{solution.points.map(point => <li key={point}><Check size={17} aria-hidden="true" />{point}</li>)}</ul>
+      <p className="public-content-note">These are product directions, not claims about live integrations or enabled company services.</p>
+    </section>
+    <section className="public-detail-next"><div><span className="public-eyebrow">CONTINUE EXPLORING</span><h2>Read the practical portal guides</h2><p>Review general guidance and preview content. Your organization’s policies remain the source of truth.</p></div><LinkButton to="/resources" onNavigate={onNavigate} secondary>Browse resources <ArrowRight size={15} /></LinkButton></section>
+  </>;
+};
+
+const ResourceDetailPage: React.FC<{ slug: string; onNavigate: (path: string) => void }> = ({ slug, onNavigate }) => {
+  const resource = publicResources.find(item => item.slug === slug);
+  const [feedback, setFeedback] = useState<'yes' | 'no' | null>(null);
+  if (!resource) return <NotFoundPage onNavigate={onNavigate} />;
+  const related = publicResources.filter(item => item.slug !== resource.slug && item.topic === resource.topic).slice(0, 2);
+  return <>
+    <Breadcrumbs items={[{ label: 'Resources', path: '/resources' }, { label: resource.title }]} onNavigate={onNavigate} />
+    <PageIntro eyebrow={`${resource.type} · ${resource.topic}`} title={resource.title} copy={resource.summary} />
+    <article className="public-detail-article">
+      <span className="public-eyebrow">{resource.status}</span>
+      <p>{resource.body}</p>
+      <div className="public-policy-note"><strong>For preview use</strong><p>This general material is not your company’s official policy. Confirm current details with your workplace administrator.</p></div>
+      <div className="public-resource-feedback" role="group" aria-label={`Feedback on ${resource.title}`}><span>Was this useful?</span><button type="button" aria-pressed={feedback === 'yes'} onClick={() => setFeedback('yes')}>Yes</button><button type="button" aria-pressed={feedback === 'no'} onClick={() => setFeedback('no')}>No</button><span className="public-feedback-status" role="status">{feedback ? 'Thanks for your feedback. It stays in this page only.' : ''}</span></div>
+    </article>
+    {related.length > 0 && <section className="public-detail-related"><SectionHeading eyebrow="RELATED READING" title="Keep exploring" /><div className="public-page-grid">{related.map(item => <article className="public-solution-detail" key={item.slug}><span className="public-card-audience">{item.type}</span><h2>{item.title}</h2><p>{item.summary}</p><a href={`/resources/${item.slug}`} onClick={event => navigateLink(event, `/resources/${item.slug}`, onNavigate)}>Read resource <ArrowRight size={15} /></a></article>)}</div></section>}
+    <p className="public-content-note">This preview library is maintained in project content. A CMS and editorial review workflow are not connected.</p>
+  </>;
+};
+
+const Breadcrumbs: React.FC<{ items: Array<{ label: string; path?: string }>; onNavigate: (path: string) => void }> = ({ items, onNavigate }) => <nav className="public-breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/" onClick={event => navigateLink(event, '/', onNavigate)}>Home</a></li>{items.map((item, index) => <li key={`${item.label}-${index}`}>{item.path && index < items.length - 1 ? <a href={item.path} onClick={event => navigateLink(event, item.path!, onNavigate)}>{item.label}</a> : <span aria-current="page">{item.label}</span>}</li>)}</ol></nav>;
+
+const NotFoundPage: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) => <section className="public-empty-state"><span className="public-eyebrow">PAGE NOT FOUND</span><h1>We couldn’t find that page.</h1><p>The link may be out of date. Browse the portal guides or return to the home page.</p><div className="public-not-found-actions"><LinkButton to="/resources" onNavigate={onNavigate} secondary>Browse resources</LinkButton><LinkButton to="/" onNavigate={onNavigate}>Go to home</LinkButton></div></section>;
+
+const ResourcesPage: React.FC<PublicSiteProps> = ({ onNavigate }) => {
   const [query, setQuery] = useState('');
   const [type, setType] = useState('All types');
   const [topic, setTopic] = useState('All topics');
@@ -143,7 +183,7 @@ const ResourcesPage: React.FC = () => {
     <PageIntro eyebrow="RESOURCE CENTER" title="Guidance for the everyday questions" copy="Search the preview library for practical guides, FAQs, templates, and training notes. Material here is general guidance, not your company’s official policy." />
     <section className="public-resource-tools" aria-label="Filter resources"><label className="public-resource-search"><Search size={18} /><span className="sr-only">Search resources</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search guides, FAQs, and topics" /></label><label>Content type<select value={type} onChange={event => setType(event.target.value)}>{types.map(item => <option key={item}>{item}</option>)}</select></label><label>Topic<select value={topic} onChange={event => setTopic(event.target.value)}>{topics.map(item => <option key={item}>{item}</option>)}</select></label><button type="button" className="public-text-button" onClick={clear}>Clear filters</button></section>
     <p className="public-result-count" aria-live="polite">{filtered.length} {filtered.length === 1 ? 'resource' : 'resources'}</p>
-    {filtered.length ? <div className="public-resource-grid">{filtered.map((item, index) => <Reveal key={item.slug} delay={(index % 3) * 50}><details className="public-resource-card" id={item.slug}><summary><span className="public-resource-meta"><span>{item.type}</span><span>{item.topic}</span></span><h2>{item.title}</h2><p>{item.summary}</p><span className="public-resource-open">Read overview <ChevronDown size={15} /></span></summary><div className="public-resource-detail"><p>{item.body}</p><small>{item.status} · Confirm details with your organization.</small><div className="public-resource-feedback" role="group" aria-label={`Feedback on ${item.title}`}><span>Was this useful?</span><button type="button" aria-pressed={feedback[item.slug] === 'yes'} onClick={() => setFeedback(previous => ({ ...previous, [item.slug]: 'yes' }))}>Yes</button><button type="button" aria-pressed={feedback[item.slug] === 'no'} onClick={() => setFeedback(previous => ({ ...previous, [item.slug]: 'no' }))}>No</button><span className="public-feedback-status" role="status">{feedback[item.slug] ? 'Thanks for your feedback. It stays in this page only.' : ''}</span></div></div></details></Reveal>)}</div> : <div className="public-empty-state"><Search size={22} /><h2>No matching resources</h2><p>Try a broader search or clear the filters.</p><button className="public-button public-button-secondary" type="button" onClick={clear}>Clear filters</button></div>}
+    {filtered.length ? <div className="public-resource-grid">{filtered.map((item, index) => <Reveal key={item.slug} delay={(index % 3) * 50}><details className="public-resource-card" id={item.slug}><summary><span className="public-resource-meta"><span>{item.type}</span><span>{item.topic}</span></span><h2>{item.title}</h2><p>{item.summary}</p><span className="public-resource-open">Read overview <ChevronDown size={15} /></span></summary><div className="public-resource-detail"><p>{item.body}</p><a className="public-resource-open" href={`/resources/${item.slug}`} onClick={event => navigateLink(event, `/resources/${item.slug}`, onNavigate)}>Open full guide <ArrowRight size={15} /></a><small>{item.status} · Confirm details with your organization.</small><div className="public-resource-feedback" role="group" aria-label={`Feedback on ${item.title}`}><span>Was this useful?</span><button type="button" aria-pressed={feedback[item.slug] === 'yes'} onClick={() => setFeedback(previous => ({ ...previous, [item.slug]: 'yes' }))}>Yes</button><button type="button" aria-pressed={feedback[item.slug] === 'no'} onClick={() => setFeedback(previous => ({ ...previous, [item.slug]: 'no' }))}>No</button><span className="public-feedback-status" role="status">{feedback[item.slug] ? 'Thanks for your feedback. It stays in this page only.' : ''}</span></div></div></details></Reveal>)}</div> : <div className="public-empty-state"><Search size={22} /><h2>No matching resources</h2><p>Try a broader search or clear the filters.</p><button className="public-button public-button-secondary" type="button" onClick={clear}>Clear filters</button></div>}
     <p className="public-content-note">These materials are structured preview content. A CMS, document repository, and review workflow are not connected in this build.</p>
   </>;
 };
@@ -237,15 +277,22 @@ const FinalCta: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate
 
 export const PublicSite: React.FC<PublicSiteProps> = ({ currentRoute, onNavigate }) => {
   const route = currentRoute.replace(/^\/+/, '') || 'home';
+  const solution = route.startsWith('solutions/') ? publicSolutions.find(item => item.id === route.split('/')[1]) : undefined;
+  const resource = route.startsWith('resources/') ? publicResources.find(item => item.slug === route.split('/')[1]) : undefined;
+  const meta = pageMeta[route] || (solution
+    ? { title: `${solution.audience} | Nexus One Solutions`, description: solution.summary }
+    : resource
+      ? { title: `${resource.title} | Nexus One`, description: resource.summary }
+      : { title: 'Page not found | Nexus One', description: 'This Nexus One page could not be found.' });
   useEffect(() => {
-    const meta = pageMeta[route] || pageMeta.home;
     document.title = meta.title;
     let description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
     if (!description) { description = document.createElement('meta'); description.name = 'description'; document.head.appendChild(description); }
     description.content = meta.description;
     let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
     if (!robots) { robots = document.createElement('meta'); robots.name = 'robots'; document.head.appendChild(robots); }
-    robots.content = 'index,follow';
+    const knownDetail = !/^(solutions|resources)\//.test(route) || Boolean(solution || resource);
+    robots.content = knownDetail ? 'index,follow' : 'noindex,nofollow';
     const setMeta = (name: string, content: string, property = false) => {
       const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
       let tag = document.querySelector<HTMLMetaElement>(selector);
@@ -262,12 +309,14 @@ export const PublicSite: React.FC<PublicSiteProps> = ({ currentRoute, onNavigate
     if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
     canonical.href = `${window.location.origin}${window.location.pathname}`;
     return () => { robots!.content = 'noindex,nofollow'; };
-  }, [route]);
+  }, [route, meta.title, meta.description, solution, resource]);
 
   let page: React.ReactNode;
   if (route === 'home') page = <HomePage currentRoute={route} onNavigate={onNavigate} />;
   else if (route === 'solutions') page = <SolutionsPage currentRoute={route} onNavigate={onNavigate} />;
-  else if (route === 'resources') page = <ResourcesPage />;
+  else if (route.startsWith('solutions/')) page = <SolutionDetailPage slug={route.split('/')[1]} onNavigate={onNavigate} />;
+  else if (route === 'resources') page = <ResourcesPage currentRoute={route} onNavigate={onNavigate} />;
+  else if (route.startsWith('resources/')) page = <ResourceDetailPage slug={route.split('/')[1]} onNavigate={onNavigate} />;
   else if (route === 'customers') page = <CustomersPage />;
   else if (route === 'pricing') page = <PricingPage />;
   else if (route === 'trust') page = <TrustPage />;

@@ -5,8 +5,8 @@ Nexus One contains a public product-information experience and the authenticated
 ## Public site
 
 - `/` — product positioning, solution paths, interactive portal preview, FAQs, and calls to action.
-- `/solutions` — employee, people-team, and team-leader journeys.
-- `/resources` — searchable guides, FAQs, templates, training notes, and product-preview content with topic/type filters and local-only feedback.
+- `/solutions` — employee, people-team, and team-leader journeys, with shareable detail pages at `/solutions/[slug]`.
+- `/resources` — searchable guides, FAQs, templates, training notes, and product-preview content with topic/type filters, local-only feedback, and shareable detail pages at `/resources/[slug]`.
 - `/customers` — explains that verified customer stories are not yet available; it does not invent results.
 - `/pricing` — deployment qualification and an assumption-based time estimator; no prices are published.
 - `/trust` and `/accessibility` — preview boundaries for sign-in, sample data, access controls, future RAG, and accessibility limitations.

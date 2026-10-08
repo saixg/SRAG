@@ -22,11 +22,13 @@ const publicRoutes = ['home', 'solutions', 'resources', 'customers', 'pricing', 
 const routeNames = [...publicRoutes, 'dashboard', 'profile', 'announcements', 'attendance', 'payroll', 'benefits', 'learning', 'directory', 'team', 'tasks', 'events', 'settings'];
 const routePath = (route: string) => route === 'home' ? '/' : `/${route}`;
 const normalizeRoute = (path: string) => {
-  const clean = path.replace(/^#?\/?/, '').split(/[?#]/)[0];
+  const clean = path.replace(/^#?\/?/, '').split(/[?#]/)[0].replace(/\/+$/, '');
   if (!clean) return 'home';
   if (clean === 'login') return 'login';
+  if (/^(solutions|resources)\/[a-z0-9-]+$/i.test(clean)) return clean;
   return routeNames.includes(clean) ? clean : 'dashboard';
 };
+const isPublicRoute = (route: string) => publicRoutes.includes(route) || /^(solutions|resources)\/[a-z0-9-]+$/i.test(route);
 const routeFromLocation = () => normalizeRoute(window.location.pathname === '/' && /^#\//.test(window.location.hash) ? window.location.hash : window.location.pathname);
 
 const RouterContent: React.FC = () => {
@@ -34,7 +36,7 @@ const RouterContent: React.FC = () => {
   const [currentRoute, setCurrentRoute] = useState(routeFromLocation);
   const activeRoute = isAuthenticated
     ? currentRoute === 'login' ? 'dashboard' : currentRoute
-    : publicRoutes.includes(currentRoute) ? currentRoute : 'login';
+    : isPublicRoute(currentRoute) ? currentRoute : 'login';
 
   useEffect(() => {
     const update = () => setCurrentRoute(routeFromLocation());
@@ -55,7 +57,7 @@ const RouterContent: React.FC = () => {
   useEffect(() => {
     let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
     if (!robots) { robots = document.createElement('meta'); robots.name = 'robots'; document.head.appendChild(robots); }
-    const isPublicPage = publicRoutes.includes(activeRoute) && (!isAuthenticated || activeRoute !== 'support');
+    const isPublicPage = isPublicRoute(activeRoute) && (!isAuthenticated || activeRoute !== 'support');
     robots.content = isPublicPage ? 'index,follow' : 'noindex,nofollow';
     if (!isPublicPage) document.title = activeRoute === 'login' ? 'Employee sign in | Nexus One' : 'Employee workspace | Nexus One';
   }, [activeRoute, isAuthenticated]);
@@ -68,7 +70,7 @@ const RouterContent: React.FC = () => {
   const finishLogin = useCallback(() => navigate('dashboard'), [navigate]);
   if (isLoading) return <div className="app-loading" role="status" aria-label="Loading Nexus One"><span /></div>;
   if (!isAuthenticated && activeRoute === 'login') return <Suspense fallback={<div className="app-loading" role="status" aria-label="Loading Nexus One"><span /></div>}><Login onLoginSuccess={finishLogin} /></Suspense>;
-  if (publicRoutes.includes(activeRoute) && (!isAuthenticated || activeRoute !== 'support')) return <Suspense fallback={<div className="public-site-loading" role="status">Loading Nexus One…</div>}><PublicSite currentRoute={activeRoute} onNavigate={navigate} /></Suspense>;
+  if (isPublicRoute(activeRoute) && (!isAuthenticated || activeRoute !== 'support')) return <Suspense fallback={<div className="public-site-loading" role="status">Loading Nexus One…</div>}><PublicSite currentRoute={activeRoute} onNavigate={navigate} /></Suspense>;
 
   const pages: Record<string, React.ReactNode> = {
     dashboard: <Dashboard onNavigate={navigate} />,
