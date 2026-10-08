@@ -55,7 +55,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             onRouteChange={onRouteChange}
           />
 
-          <main className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto pb-24 lg:pb-12 animate-in fade-in duration-200">
+          <main key={currentRoute} className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto pb-24 lg:pb-12 animate-in fade-in duration-200">
             {children}
           </main>
         </div>

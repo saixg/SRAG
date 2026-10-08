@@ -250,3 +250,16 @@ h1, h2, h3, h4, .login-brand strong { font-family: Manrope, Aptos, "Segoe UI", s
 .assistant-launcher { bottom:1.25rem; min-height:2.9rem; }
 @media(max-width:640px) { .assistant-panel { right:.5rem; bottom:8.9rem; width:calc(100vw - 1rem); height:calc(100dvh - 10rem); max-height:none; }.assistant-launcher { bottom:5.1rem; } }
 @media(prefers-reduced-motion:reduce) { .assistant-typing i { animation:none; opacity:.8; } }
+
+/* Gentle entrance motion as employees move between portal pages. */
+.app-shell main { animation: portal-page-enter .38s cubic-bezier(.2,.7,.25,1) both; }
+.app-shell main > div > * { animation: portal-content-enter .42s cubic-bezier(.2,.7,.25,1) both; }
+.app-shell main > div > :nth-child(2) { animation-delay:45ms; }
+.app-shell main > div > :nth-child(3) { animation-delay:85ms; }
+.app-shell main > div > :nth-child(4) { animation-delay:125ms; }
+.app-shell main > div > :nth-child(5) { animation-delay:165ms; }
+@keyframes portal-page-enter { from { opacity:.75; } to { opacity:1; } }
+@keyframes portal-content-enter { from { opacity:0; transform:translateY(9px); } to { opacity:1; transform:translateY(0); } }
+@media(prefers-reduced-motion:reduce) {
+  .app-shell main,.app-shell main > div > * { animation:none!important; }
+}
