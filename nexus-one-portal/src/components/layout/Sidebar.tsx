@@ -86,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         isCollapsed ? "w-20" : "w-64"
       )}>
         {/* Brand Header */}
-        <div className="h-16 px-4 flex items-center justify-between border-b border-[#22375F] bg-[#111A2E]/50">
+        <div className={clsx("relative h-16 flex items-center border-b border-[#22375F] bg-[#111A2E]/50", isCollapsed ? "justify-center px-2" : "justify-between px-4")}>
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#4F7CFF] to-[#27D8E8] flex items-center justify-center text-white font-bold shadow-md shadow-blue-900/30 shrink-0">
               <Sparkles className="w-5 h-5 text-white" />
@@ -102,9 +102,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           <button
+            type="button"
             onClick={onToggleCollapse}
-            className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className={clsx("hidden lg:flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4F7CFF]", isCollapsed ? "absolute right-1 top-1/2 -translate-y-1/2 w-6 h-8 bg-[#111A2E] border border-[#22375F] shadow-lg" : "p-1.5")}
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!isCollapsed}
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>

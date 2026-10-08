@@ -759,5 +759,6 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   density: 'comfortable',
   accentColor: '#4F7CFF',
   language: 'English (US)',
+  currency: 'INR',
   profileVisibility: 'Company'
 };

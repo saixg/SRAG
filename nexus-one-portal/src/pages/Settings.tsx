@@ -33,7 +33,19 @@ export const Settings: React.FC = () => {
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState<'account' | 'notifications' | 'appearance' | 'language' | 'privacy' | 'apps'>('account');
   const [settings, setSettings] = useState<UserSettings>(() => {
-    try { return { ...DEFAULT_USER_SETTINGS, ...JSON.parse(localStorage.getItem('nexus_one_preferences_v1') || '{}') }; } catch { return DEFAULT_USER_SETTINGS; }
+    try {
+      const stored = JSON.parse(localStorage.getItem('nexus_one_preferences_v1') || '{}');
+      const validLanguages = ['English (US)', 'English (UK)', 'Hindi', 'Spanish', 'French', 'German (Deutsch)', 'Japanese'];
+      const oldLanguage = String(stored.language || '');
+      const language = validLanguages.includes(oldLanguage)
+        ? oldLanguage
+        : oldLanguage.startsWith('Hindi') ? 'Hindi'
+          : oldLanguage.startsWith('Spanish') ? 'Spanish'
+            : oldLanguage.startsWith('French') ? 'French'
+              : oldLanguage.startsWith('Japanese') ? 'Japanese'
+                : DEFAULT_USER_SETTINGS.language;
+      return { ...DEFAULT_USER_SETTINGS, ...stored, language, currency: ['INR', 'USD', 'EUR', 'GBP'].includes(stored.currency) ? stored.currency : DEFAULT_USER_SETTINGS.currency };
+    } catch { return DEFAULT_USER_SETTINGS; }
   });
 
   useEffect(() => {
@@ -398,11 +410,11 @@ export const Settings: React.FC = () => {
                 >
                   <option value="English (US)">English (US) - Corporate Default</option>
                   <option value="English (UK)">English (UK)</option>
-                  <option value="Hindi (à¤¹à¤¿à¤¨à¥à¤¦à¥€)">Hindi (à¤¹à¤¿à¤¨à¥à¤¦à¥€)</option>
-                  <option value="Spanish (EspaÃ±ol)">Spanish (EspaÃ±ol)</option>
-                  <option value="French (FranÃ§ais)">French (FranÃ§ais)</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Spanish">Spanish</option>
+                  <option value="French">French</option>
                   <option value="German (Deutsch)">German (Deutsch)</option>
-                  <option value="Japanese (æ—¥æœ¬èªž)">Japanese (æ—¥æœ¬èªž)</option>
+                  <option value="Japanese">Japanese</option>
                 </select>
               </div>
 
@@ -411,12 +423,17 @@ export const Settings: React.FC = () => {
                   Currency Format
                 </label>
                 <select
+                  value={settings.currency || 'INR'}
+                  onChange={(e) => {
+                    setSettings(prev => ({ ...prev, currency: e.target.value as UserSettings['currency'] }));
+                    addToast(`Currency format updated to ${e.target.value}.`, 'success');
+                  }}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B1020] border border-slate-800 text-sm text-white focus:outline-none focus:border-[#4F7CFF]"
                 >
-                  <option value="INR">INR (â‚¹) - Indian Rupee (Default based on Bengaluru HQ)</option>
+                  <option value="INR">INR (₹) - Indian Rupee (Default based on Bengaluru HQ)</option>
                   <option value="USD">USD ($) - US Dollar</option>
-                  <option value="EUR">EUR (â‚¬) - Euro</option>
-                  <option value="GBP">GBP (Â£) - British Pound</option>
+                  <option value="EUR">EUR (€) - Euro</option>
+                  <option value="GBP">GBP (£) - British Pound</option>
                 </select>
               </div>
             </div>

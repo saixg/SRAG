@@ -214,5 +214,6 @@ export interface UserSettings {
   density: 'comfortable' | 'compact';
   accentColor: string;
   language: string;
+  currency: 'INR' | 'USD' | 'EUR' | 'GBP';
   profileVisibility: 'Company' | 'Team Only' | 'Private';
 }
