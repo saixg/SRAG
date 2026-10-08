@@ -1,24 +1,48 @@
-# Nexus One Employee Portal
+# Nexus One
 
-Nexus One is the React frontend for an employee workspace. It includes username/password sign-in and invited employee registration, plus screens for the dashboard, profile, announcements, leave and attendance, payroll, benefits, learning, directory, team workspace, approvals, events, support, and settings.
+Nexus One contains a public product-information experience and the authenticated employee portal. The public pages describe the portal preview; they do not claim live customer results, published prices, certifications, or HR integrations.
 
-Employee-facing screens use sample workspace records; their preview actions do not write to an HR system.
+## Public site
 
-## Start the portal
+- `/` — product positioning, solution paths, interactive portal preview, FAQs, and calls to action.
+- `/solutions` — employee, people-team, and team-leader journeys.
+- `/resources` — searchable guides, FAQs, templates, training notes, and product-preview content with topic/type filters and local-only feedback.
+- `/customers` — explains that verified customer stories are not yet available; it does not invent results.
+- `/pricing` — deployment qualification and an assumption-based time estimator; no prices are published.
+- `/trust` and `/accessibility` — preview boundaries for sign-in, sample data, access controls, future RAG, and accessibility limitations.
+- `/company`, `/support`, and `/contact` — company overview, preview FAQs, and a lead request form.
+
+Public content is structured in `src/data/publicSiteContent.ts` so it can later move to a CMS. There is no CMS, customer-story repository, analytics, consent manager, or production content-review workflow configured in this project. No analytics cookies are added.
+
+The contact form validates fields in the browser. It sends a request only when `VITE_PUBLIC_LEAD_ENDPOINT` is configured. Without it, the form explains that no message was sent. The endpoint should accept a JSON `POST` and return a successful HTTP status. No CRM or lead-routing API is included in this repository.
+
+## Employee portal
+
+- `/login` — employee username/password sign-in and invited account registration.
+- `/dashboard`, `/profile`, `/announcements`, `/attendance`, `/payroll`, `/benefits`, `/learning`, `/directory`, `/team`, `/tasks`, `/events`, `/support`, and `/settings` — existing employee workspace routes.
+
+Employee authentication uses the configured backend endpoints below. Several employee workflows currently use sample data and do not write to an HR system. RAG document search is not included yet.
+
+## Configuration
+
+Copy `.env.example` to `.env.local` and set the API endpoints for your environment:
+
+- `VITE_AUTH_LOGIN_ENDPOINT`
+- `VITE_AUTH_REGISTER_ENDPOINT`
+- `VITE_AUTH_SESSION_ENDPOINT`
+- `VITE_AUTH_LOGOUT_ENDPOINT`
+- `VITE_PUBLIC_LEAD_ENDPOINT` (optional; needed to send the public request form)
+
+Keep secrets on the backend. No API key or secret belongs in a `VITE_` variable.
+
+## Development and checks
 
 1. Install Node.js 20.19+ or 22.12+.
-2. From this folder, run `npm install`.
-3. Copy `.env.example` to `.env.local` and set the API URLs.
-4. Configure the backend `.env` with `DATABASE_URL`, a strong random `SECRET_KEY`, `PORTAL_SIGNUP_INVITE_CODE` (at least 16 random characters; generate with `python -c "import secrets; print(secrets.token_urlsafe(32))"`), and the exact frontend origin in `CORS_ORIGINS`.
-5. From the repository root, apply the account-table migration with `alembic upgrade head`.
-6. Start the backend API and run `npm run dev` in this folder.
+2. Run `npm install`.
+3. Configure `.env.local` and the corresponding backend services.
+4. Run `npm run dev`.
 
-Share the invite code only with people you intend to invite. The registration page requires it; registrations are stored in PostgreSQL with a salted PBKDF2-SHA256 password hash and receive the basic `EMPLOYEE` role. There are no seeded or demo accounts. Manager and administrator roles must be granted through trusted database administration; users cannot choose their own role.
+- `npm run build` — TypeScript and production build.
+- `npm run lint` — Oxlint. The existing codebase has unused-import and Fast Refresh warnings.
 
-The frontend reads `VITE_AUTH_LOGIN_ENDPOINT`, `VITE_AUTH_REGISTER_ENDPOINT`, `VITE_AUTH_SESSION_ENDPOINT`, and `VITE_AUTH_LOGOUT_ENDPOINT`. The backend routes are `/api/v1/auth/login`, `/api/v1/auth/register`, `/api/v1/auth/session`, and `/api/v1/auth/logout`; `/api/v1/health` remains available. Production deployments should use HTTPS and store the invite code and signing key in a secret manager.
-
-## Checks
-
-- `npm run build` builds the production frontend.
-- `npm run lint` runs Oxlint.
-- `python -m pytest -q` runs backend tests from the repository root.
+There is no frontend unit-test or end-to-end test script configured. A production sitemap and canonical production domain still need to be supplied by the deployment owner.

@@ -51,7 +51,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     <main className="login-page">
       <div className="login-grid">
         <section className="login-intro" aria-labelledby="login-heading">
-          <a className="login-brand" href="/login" aria-label="Nexus One sign in">
+          <a className="login-brand" href="/" aria-label="Nexus One home">
             <span className="login-brand-mark"><Building2 size={22} aria-hidden="true" /></span>
             <span><strong>Nexus One</strong><small>Employee workspace</small></span>
           </a>

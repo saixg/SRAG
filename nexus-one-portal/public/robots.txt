@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /announcements
+Disallow: /attendance
+Disallow: /payroll
+Disallow: /benefits
+Disallow: /learning
+Disallow: /directory
+Disallow: /team
+Disallow: /tasks
+Disallow: /events
+Disallow: /settings
