@@ -21,6 +21,7 @@ import { Button } from '../components/common/Button';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Drawer } from '../components/common/Drawer';
 import { Modal } from '../components/common/Modal';
+import { downloadFile } from '../utils/downloadFile';
 
 export const Directory: React.FC = () => {
   const { showInfo } = useToast();
@@ -63,9 +64,22 @@ export const Directory: React.FC = () => {
     setEmailModalOpen(false);
   };
 
-  const handleScheduleSubmit = (e: React.FormEvent) => {
+  const handleScheduleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    showInfo('Meeting draft saved', `No invitation was sent to ${selectedEmp?.name}. Use the calendar export to add a meeting yourself.`);
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    const date = String(data.get('meetingDate') || '');
+    const time = String(data.get('meetingTime') || '');
+    const [year, month, day] = date.split('-').map(Number);
+    const [hour, minute] = time.split(':').map(Number);
+    if (!selectedEmp || ![year, month, day, hour, minute].every(Number.isFinite)) return;
+    const stamp = (h: number, m: number) => `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}T${String(h).padStart(2, '0')}${String(m).padStart(2, '0')}00`;
+    const startMinutes = hour * 60 + minute;
+    const endMinutes = startMinutes + 30;
+    const escape = (value: string) => value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+    const calendar = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nexus One//Employee Workspace//EN', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT', `UID:meeting-${Date.now()}@nexus-one.local`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`, `DTSTART;TZID=Asia/Kolkata:${stamp(hour, minute)}`, `DTEND;TZID=Asia/Kolkata:${stamp(Math.floor(endMinutes / 60) % 24, endMinutes % 60)}`, `SUMMARY:${escape(`Meeting with ${selectedEmp.name}`)}`, `DESCRIPTION:${escape('Import this calendar file to add the meeting. No invitation email was sent.')}`, `LOCATION:${escape(selectedEmp.location)}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    downloadFile('nexus-one-meeting.ics', calendar, 'text/calendar;charset=utf-8');
+    showInfo('Calendar file downloaded', `Import the .ics file to add your meeting with ${selectedEmp.name}. No invitation email was sent.`);
     setScheduleModalOpen(false);
   };
 
@@ -333,7 +347,7 @@ export const Directory: React.FC = () => {
         isOpen={scheduleModalOpen}
         onClose={() => setScheduleModalOpen(false)}
         title={`Schedule Sync with ${selectedEmp?.name}`}
-        subtitle="Reserve a collaborative 1:1 meeting slot"
+        subtitle="Create a calendar file you can import. This preview cannot send invitations."
         maxWidth="sm"
       >
         <form onSubmit={handleScheduleSubmit} className="space-y-4">
@@ -344,6 +358,7 @@ export const Directory: React.FC = () => {
             <input
               type="date"
               required
+              name="meetingDate"
               defaultValue="2026-10-15"
               className="w-full px-3 py-2 rounded-xl bg-[#0B1020] border border-[#22375F] text-xs text-white focus:outline-none focus:border-[#4F7CFF]"
             />
@@ -355,6 +370,7 @@ export const Directory: React.FC = () => {
             <input
               type="time"
               required
+              name="meetingTime"
               defaultValue="14:00"
               className="w-full px-3 py-2 rounded-xl bg-[#0B1020] border border-[#22375F] text-xs text-white focus:outline-none focus:border-[#4F7CFF]"
             />
@@ -364,7 +380,7 @@ export const Directory: React.FC = () => {
               Cancel
             </Button>
             <Button variant="primary" size="sm" type="submit">
-              Create Calendar Invite
+              Download .ics file
             </Button>
           </div>
         </form>

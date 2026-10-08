@@ -43,6 +43,8 @@ export const Profile: React.FC = () => {
   const [editLocation, setEditLocation] = useState(user?.location || '');
   const [newSkillText, setNewSkillText] = useState('');
   const [managerMessage, setManagerMessage] = useState('');
+  const completenessFields = [user?.name, user?.email, user?.roleTitle, user?.department, user?.location, user?.phone, user?.bio, user?.skills?.length, user?.certifications?.length];
+  const profileCompleteness = Math.round(completenessFields.filter(Boolean).length / completenessFields.length * 100);
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: <User className="w-4 h-4" /> },
@@ -130,7 +132,7 @@ export const Profile: React.FC = () => {
               </div>
               <div className="mb-1">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl lg:text-2xl font-bold text-white">{user?.name}</h2>
+                  <h2 className="text-xl lg:text-2xl font-bold !text-white">{user?.name}</h2>
                   <StatusBadge type={user?.role || 'EMPLOYEE'} size="sm" />
                 </div>
                 <p className="text-xs text-slate-300 font-medium mt-0.5">{user?.roleTitle}</p>
@@ -140,6 +142,7 @@ export const Profile: React.FC = () => {
 
             <Button
               variant="outline"
+              className="shrink-0"
               size="sm"
               onClick={() => setContactManagerOpen(true)}
               leftIcon={<MessageSquare className="w-3.5 h-3.5" />}
@@ -148,14 +151,14 @@ export const Profile: React.FC = () => {
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-[#22375F] text-xs font-mono text-slate-400">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 pt-3 border-t border-[#22375F] text-xs font-sans text-slate-400">
             <div className="flex items-center gap-2">
               <MapPin className="w-3.5 h-3.5 text-[#4F7CFF]" />
               <span className="text-slate-200 truncate">{user?.location}</span>
             </div>
             <div className="flex items-center gap-2">
               <Mail className="w-3.5 h-3.5 text-[#8B6CFF]" />
-              <span className="text-slate-200 truncate">{user?.email}</span>
+              <span className="text-slate-200 break-all">{user?.email}</span>
             </div>
             <div className="flex items-center gap-2">
               <Briefcase className="w-3.5 h-3.5 text-[#21C7A8]" />
@@ -181,7 +184,7 @@ export const Profile: React.FC = () => {
                 About Me
               </h3>
               <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                {user?.bio}
+                {user?.bio || 'Add a short introduction so colleagues can learn about your work and interests.'}
               </p>
             </Card>
 
@@ -199,7 +202,7 @@ export const Profile: React.FC = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {user?.skills?.map((skill, idx) => (
+                {user?.skills?.length ? user.skills.map((skill, idx) => (
                   <span
                     key={idx}
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#1C2D4F] border border-[#22375F] text-xs font-medium text-slate-200 group"
@@ -212,7 +215,7 @@ export const Profile: React.FC = () => {
                       <X className="w-3 h-3" />
                     </button>
                   </span>
-                ))}
+                )) : <p className="text-xs text-slate-400">Add your first skill to help colleagues find your expertise.</p>}
               </div>
             </Card>
 
@@ -221,14 +224,14 @@ export const Profile: React.FC = () => {
                 Career Interests & Growth Paths
               </h3>
               <div className="flex flex-wrap gap-2">
-                {user?.careerInterests?.map((interest, idx) => (
+                {user?.careerInterests?.length ? user.careerInterests.map((interest, idx) => (
                   <span
                     key={idx}
                     className="px-3 py-1 rounded-xl bg-purple-950/50 border border-purple-500/40 text-xs font-medium text-purple-200"
                   >
                     ✨ {interest}
                   </span>
-                ))}
+                )) : <p className="text-xs text-slate-400">Add career interests to keep your growth goals visible to you.</p>}
               </div>
             </Card>
           </div>
@@ -238,9 +241,9 @@ export const Profile: React.FC = () => {
               <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                 Profile Completeness
               </h4>
-              <ProgressBar progress={95} color="blue" showLabel />
+              <ProgressBar progress={profileCompleteness} color="blue" showLabel />
               <p className="text-[11px] text-slate-400">
-                Your profile is 95% complete with verified skills and work details.
+                {profileCompleteness === 100 ? 'Your main profile details are up to date.' : 'Add your bio, contact details, skills, or certifications to complete your profile.'}
               </p>
             </Card>
 
@@ -251,15 +254,15 @@ export const Profile: React.FC = () => {
               <div className="space-y-2 text-xs font-mono">
                 <div className="flex justify-between text-slate-400">
                   <span>Policy:</span>
-                  <span className="text-slate-200">{user?.workArrangement}</span>
+                  <span className="text-slate-200">{user?.workArrangement || 'Not set'}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Time Zone:</span>
-                  <span className="text-slate-200">{user?.timeZone}</span>
+                  <span className="text-slate-200">{user?.timeZone || 'Not set'}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Working Hours:</span>
-                  <span className="text-slate-200">9:00 AM – 6:00 PM</span>
+                  <span className="text-slate-200">Not provided</span>
                 </div>
               </div>
             </Card>
@@ -276,19 +279,19 @@ export const Profile: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="p-3 rounded-xl bg-[#0B1020] border border-[#22375F]">
               <p className="text-[10px] text-slate-400 uppercase font-mono">Personal Email</p>
-              <p className="font-semibold text-white mt-0.5">ananya.sharma.personal@nexusdemo.internal</p>
+              <p className="font-semibold text-white mt-0.5">Not provided</p>
             </div>
             <div className="p-3 rounded-xl bg-[#0B1020] border border-[#22375F]">
               <p className="text-[10px] text-slate-400 uppercase font-mono">Phone Number</p>
-              <p className="font-semibold text-white mt-0.5">{user?.phone}</p>
+              <p className="font-semibold text-white mt-0.5">{user?.phone || 'Not provided'}</p>
             </div>
             <div className="p-3 rounded-xl bg-[#0B1020] border border-[#22375F]">
               <p className="text-[10px] text-slate-400 uppercase font-mono">Emergency Contact</p>
-              <p className="font-semibold text-white mt-0.5">Rajesh Sharma (Spouse) • +91 98765 00000</p>
+              <p className="font-semibold text-white mt-0.5">Not provided</p>
             </div>
             <div className="p-3 rounded-xl bg-[#0B1020] border border-[#22375F]">
               <p className="text-[10px] text-slate-400 uppercase font-mono">Residential Address</p>
-              <p className="font-semibold text-white mt-0.5">Koramangala 4th Block, Bengaluru 560034</p>
+              <p className="font-semibold text-white mt-0.5">Not provided</p>
             </div>
           </div>
         </Card>
@@ -307,15 +310,15 @@ export const Profile: React.FC = () => {
             </div>
             <div className="p-3 rounded-xl bg-[#0B1020] border border-[#22375F]">
               <p className="text-[10px] text-slate-400 uppercase">Cost Center</p>
-              <p className="font-bold text-white mt-0.5">CC-DES-8810</p>
+              <p className="font-bold text-white mt-0.5">Assigned by your company</p>
             </div>
             <div className="p-3 rounded-xl bg-[#0B1020] border border-[#22375F]">
               <p className="text-[10px] text-slate-400 uppercase">Reporting Manager</p>
-              <p className="font-bold text-purple-300 mt-0.5">{user?.manager}</p>
+              <p className="font-bold text-purple-300 mt-0.5">{user?.manager || 'Not assigned'}</p>
             </div>
             <div className="p-3 rounded-xl bg-[#0B1020] border border-[#22375F]">
               <p className="text-[10px] text-slate-400 uppercase">Tenure</p>
-              <p className="font-bold text-emerald-300 mt-0.5">3 Years 2 Months</p>
+              <p className="font-bold text-emerald-300 mt-0.5">Not available</p>
             </div>
           </div>
         </Card>
@@ -329,7 +332,7 @@ export const Profile: React.FC = () => {
               Verified Certifications
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {user?.certifications?.map((cert, idx) => (
+              {user?.certifications?.length ? user.certifications.map((cert, idx) => (
                 <div key={idx} className="p-3 rounded-xl bg-[#0B1020] border border-[#22375F] flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-emerald-950/60 text-emerald-400 border border-emerald-500/40">
                     <Award className="w-4 h-4" />
@@ -339,7 +342,7 @@ export const Profile: React.FC = () => {
                     <p className="text-[10px] text-slate-400 font-mono">Issued by Nexus Academy</p>
                   </div>
                 </div>
-              ))}
+              )) : <p className="text-sm text-slate-400">No certifications added yet.</p>}
             </div>
           </div>
         </Card>

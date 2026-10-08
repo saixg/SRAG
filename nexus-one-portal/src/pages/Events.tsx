@@ -22,10 +22,16 @@ import { INITIAL_EVENTS } from '../data/mockData';
 import { useToast } from '../context/ToastContext';
 import { CompanyEvent } from '../types';
 import { downloadFile } from '../utils/downloadFile';
+import { getRegisteredEventIds, saveRegisteredEventIds } from '../utils/eventRsvp';
+import { useAuth } from '../context/AuthContext';
 
-export const Events: React.FC = () => {
+export const Events: React.FC<{ onNavigate?: (route: string) => void }> = ({ onNavigate }) => {
+  const { user } = useAuth();
   const { addToast } = useToast();
-  const [events, setEvents] = useState<CompanyEvent[]>(INITIAL_EVENTS);
+  const [events, setEvents] = useState<CompanyEvent[]>(() => {
+    const registered = getRegisteredEventIds(user?.id || 'preview', INITIAL_EVENTS.filter(event => event.isRegistered).map(event => event.id));
+    return INITIAL_EVENTS.map(event => ({ ...event, isRegistered: registered.includes(event.id) }));
+  });
   const [activeTab, setActiveTab] = useState<'all' | 'registered' | 'past'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,12 +59,17 @@ export const Events: React.FC = () => {
   });
 
   const handleToggleRegistration = (id: string) => {
+    const event = events.find(item => item.id === id);
+    const nextRegistered = event?.isRegistered
+      ? events.filter(item => item.isRegistered && item.id !== id).map(item => item.id)
+      : [...events.filter(item => item.isRegistered).map(item => item.id), id];
+    saveRegisteredEventIds(user?.id || 'preview', nextRegistered);
     setEvents(prev => prev.map(ev => {
       if (ev.id === id) {
         const nextReg = !ev.isRegistered;
         const nextCount = nextReg ? ev.registeredCount + 1 : ev.registeredCount - 1;
         addToast(
-          nextReg ? `Successfully RSVP'd for "${ev.title}"!` : `Cancelled RSVP for "${ev.title}".`,
+          nextReg ? `RSVP saved for "${ev.title}" in this browser preview.` : `RSVP cancelled for "${ev.title}".`,
           nextReg ? 'success' : 'info'
         );
         return { ...ev, isRegistered: nextReg, registeredCount: nextCount };
@@ -265,11 +276,13 @@ export const Events: React.FC = () => {
                         Details
                       </Button>
                       <Button
-                        variant={event.isRegistered ? 'outline' : 'primary'}
+                        variant={event.isRegistered ? 'danger' : 'primary'}
                         size="sm"
                         onClick={() => handleToggleRegistration(event.id)}
+                        aria-pressed={event.isRegistered}
+                        aria-label={event.isRegistered ? `Cancel RSVP for ${event.title}` : `Register for ${event.title}`}
                       >
-                        {event.isRegistered ? 'Leave' : 'RSVP'}
+                        {event.isRegistered ? 'Cancel RSVP' : 'Register'}
                       </Button>
                     </div>
                   </div>
@@ -324,6 +337,7 @@ export const Events: React.FC = () => {
               </Button>
 
               <div className="flex gap-2">
+                {onNavigate && <Button variant="secondary" size="sm" onClick={() => { setSelectedEvent(null); onNavigate('support'); }}>Event help</Button>}
                 <Button variant="ghost" size="sm" onClick={() => setSelectedEvent(null)}>Close</Button>
                 <Button
                   variant={selectedEvent.isRegistered ? 'danger' : 'primary'}

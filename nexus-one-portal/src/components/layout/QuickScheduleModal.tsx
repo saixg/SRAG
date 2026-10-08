@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Video, Users, CheckCircle2 } from 'lucide-react';
+import { Video } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { useToast } from '../../context/ToastContext';
@@ -23,7 +23,6 @@ export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
   const [date, setDate] = useState('2026-10-14');
   const [time, setTime] = useState('14:00');
   const [duration, setDuration] = useState('30');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -136,15 +135,15 @@ export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
 
         <div className="p-3 rounded-xl bg-[#15223D] border border-[#22375F] text-xs text-slate-300 flex items-center gap-2">
           <Video className="w-4 h-4 text-cyan-400 shrink-0" />
-          <span>Automatic virtual room link will be attached to the invite.</span>
+          <span>A calendar file will be downloaded for you to import. No email or meeting link is sent from this preview.</span>
         </div>
 
         <div className="pt-3 border-t border-[#22375F] flex justify-end gap-2">
           <Button variant="ghost" size="sm" type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" size="sm" type="submit" isLoading={isSubmitting}>
-            Send Calendar Invite
+          <Button variant="primary" size="sm" type="submit">
+            Download .ics file
           </Button>
         </div>
       </form>

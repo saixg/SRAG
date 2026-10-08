@@ -21,7 +21,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   useEffect(() => {
     try {
       const prefs = JSON.parse(localStorage.getItem('nexus_one_preferences_v1') || '{}');
-      if (prefs.theme) document.documentElement.dataset.theme = prefs.theme;
+      document.documentElement.dataset.theme = prefs.theme || 'dark';
     } catch { /* Keep the default workspace theme. */ }
   }, []);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

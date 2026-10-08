@@ -35,6 +35,8 @@ import {
   INITIAL_EVENTS,
   DIRECTORY_EMPLOYEES
 } from '../data/mockData';
+import { getRegisteredEventIds, saveRegisteredEventIds } from '../utils/eventRsvp';
+import { OnboardingChecklist } from '../components/layout/OnboardingChecklist';
 
 export interface DashboardProps {
   onNavigate: (route: string) => void;
@@ -53,7 +55,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [addFocusOpen, setAddFocusOpen] = useState(false);
   const [newFocusTitle, setNewFocusTitle] = useState('');
   const [newFocusTime, setNewFocusTime] = useState('16:00');
-  const [registeredEvents, setRegisteredEvents] = useState<string[]>(['evt_01', 'evt_02']);
+  const [registeredEvents, setRegisteredEvents] = useState<string[]>(() => getRegisteredEventIds(user?.id || 'preview', ['evt_01', 'evt_02']));
   const [pulseAnswered, setPulseAnswered] = useState(false);
 
   const toggleFocus = (id: number) => {
@@ -81,11 +83,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   const handleToggleEventReg = (eventId: string) => {
     if (registeredEvents.includes(eventId)) {
-      setRegisteredEvents(prev => prev.filter(id => id !== eventId));
-      showInfo('Registration Cancelled', 'Event removed from your calendar.');
+      const next = registeredEvents.filter(id => id !== eventId);
+      setRegisteredEvents(next);
+      saveRegisteredEventIds(user?.id || 'preview', next);
+      showInfo('RSVP cancelled', 'Your event registration was removed from this browser preview.');
     } else {
-      setRegisteredEvents(prev => [...prev, eventId]);
-      showSuccess('Event Registered', 'Added to your calendar schedule.');
+      const next = [...registeredEvents, eventId];
+      setRegisteredEvents(next);
+      saveRegisteredEventIds(user?.id || 'preview', next);
+      showSuccess('RSVP saved', 'Your event registration was saved in this browser preview. No email was sent.');
     }
   };
 
@@ -100,6 +106,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     day: 'numeric',
     year: 'numeric'
   }).format(new Date());
+  const isNewJoiner = user?.department?.toLowerCase() === 'new starter' || user?.roleTitle?.toLowerCase() === 'new starter';
 
   return (
     <div className="space-y-8">
@@ -196,6 +203,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           })}
         </div>
       </Card>
+
+      {isNewJoiner && user && <OnboardingChecklist userId={user.id} onNavigate={onNavigate} />}
 
       {/* Main Grid: Focus Area + Announcements + Events + Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -366,11 +375,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   {upcomingEvent.registeredCount} colleagues attending
                 </span>
                 <Button
-                  variant={registeredEvents.includes(upcomingEvent.id) ? 'outline' : 'primary'}
+                  variant={registeredEvents.includes(upcomingEvent.id) ? 'danger' : 'primary'}
                   size="sm"
                   onClick={() => handleToggleEventReg(upcomingEvent.id)}
+                  aria-pressed={registeredEvents.includes(upcomingEvent.id)}
+                  aria-label={registeredEvents.includes(upcomingEvent.id) ? `Cancel RSVP for ${upcomingEvent.title}` : `Register for ${upcomingEvent.title}`}
                 >
-                  {registeredEvents.includes(upcomingEvent.id) ? '✓ Registered' : 'Register'}
+                  {registeredEvents.includes(upcomingEvent.id) ? 'Cancel RSVP' : 'Register'}
                 </Button>
               </div>
             </div>

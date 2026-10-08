@@ -96,6 +96,37 @@ html[data-theme="blue"] .app-shell [class*="text-slate-200"], html[data-theme="b
 html[data-theme="blue"] .app-shell [class*="text-slate-400"], html[data-theme="blue"] .app-shell [class*="text-slate-500"] { color: #617996 !important; }
 html[data-theme="blue"] .app-shell header, html[data-theme="blue"] .app-shell aside { background: rgba(248,251,255,.96) !important; border-color: #cfdef1 !important; }
 html[data-theme="blue"] .app-shell [class*="bg-[#4F7CFF]"][class*="text-white"], html[data-theme="blue"] .app-shell [class*="bg-gradient-to-r"][class*="text-white"] { color: #fff !important; }
+
+/* A richer dark option for the employee workspace. */
+html[data-theme="aurora"], html[data-theme="aurora"] body { background: #090d1b; color: #f3f6ff; }
+html[data-theme="aurora"] .app-shell {
+  color: #f3f6ff !important;
+  background-color: #090d1b !important;
+  background-image: radial-gradient(ellipse at 12% 4%, #263b7740 0, transparent 35%), radial-gradient(ellipse at 88% 35%, #4f2c6e2e 0, transparent 34%), radial-gradient(ellipse at 44% 100%, #0d536326 0, transparent 40%);
+  background-size: 150% 150%;
+  animation: aurora-drift 24s ease-in-out infinite alternate;
+}
+html[data-theme="aurora"] .app-shell [class*="bg-[#0B1020]"] { background-color: #0b1020 !important; }
+html[data-theme="aurora"] .app-shell [class*="bg-[#111A2E]"] { background-color: #121a30 !important; }
+html[data-theme="aurora"] .app-shell [class*="bg-[#15223D]"] { background-color: #1a2743 !important; }
+html[data-theme="aurora"] .app-shell [class*="bg-[#1C2D4F]"] { background-color: #202f50 !important; }
+html[data-theme="aurora"] .app-shell [class*="border-[#22375F]"] { border-color: #34466d !important; }
+html[data-theme="aurora"] .app-shell [class*="text-white"] { color: #f3f6ff !important; }
+html[data-theme="aurora"] .app-shell [class*="text-slate-200"] { color: #dce5f8 !important; }
+html[data-theme="aurora"] .app-shell [class*="text-slate-300"] { color: #bdcbe3 !important; }
+html[data-theme="aurora"] .app-shell [class*="text-slate-400"], html[data-theme="aurora"] .app-shell [class*="text-slate-500"] { color: #9caecc !important; }
+html[data-theme="aurora"] .app-shell header, html[data-theme="aurora"] .app-shell aside { background: #0d1428ed !important; border-color: #34466d !important; }
+html[data-theme="aurora"] .app-shell [class*="bg-[#4F7CFF]"][class*="text-white"], html[data-theme="aurora"] .app-shell [class*="bg-gradient-to-r"][class*="text-white"] { color: #fff !important; }
+
+@keyframes aurora-drift { from { background-position: 0% 0%; } to { background-position: 100% 80%; } }
+@media (prefers-reduced-motion: reduce) { html[data-theme="aurora"] .app-shell { animation: none; } }
+
+:root { font-family: Inter, Aptos, "Segoe UI", system-ui, sans-serif; font-size: 15px; }
+body { font-family: Inter, Aptos, "Segoe UI", system-ui, sans-serif; }
+h1, h2, h3, h4, .login-brand strong { font-family: Manrope, Aptos, "Segoe UI", system-ui, sans-serif; }
+.login-intro { background-size: 180% 180%; animation: login-gradient-shift 16s ease-in-out infinite alternate; }
+@keyframes login-gradient-shift { from { background-position: 0% 40%; } to { background-position: 100% 60%; } }
+@media (prefers-reduced-motion: reduce) { .login-intro { animation: none; } }
 .assistant-launcher { position: fixed; z-index: 45; right: 1.25rem; bottom: 1.25rem; display: flex; align-items: center; gap: .5rem; border: 0; border-radius: 999px; padding: .8rem 1rem; color: #fff; background: linear-gradient(135deg,#2563eb,#1d4ed8); box-shadow: 0 10px 30px #1d4ed844; font-weight: 700; }
 .assistant-launcher:hover { transform: translateY(-1px); box-shadow: 0 14px 34px #1d4ed855; }
 .assistant-panel { position: fixed; z-index: 50; right: 1.25rem; bottom: 5.25rem; width: min(390px,calc(100vw - 2rem)); max-height: min(580px,calc(100dvh - 7rem)); display: flex; flex-direction: column; background: #fff; color: #172b4d; border: 1px solid #dbe4f0; border-radius: 18px; box-shadow: 0 24px 70px #10294a2b; overflow: hidden; }

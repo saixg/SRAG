@@ -66,7 +66,7 @@ const RouterContent: React.FC = () => {
     directory: <Directory />,
     team: <TeamWorkspace />,
     tasks: <TasksApprovals />,
-    events: <Events />,
+    events: <Events onNavigate={navigate} />,
     support: <Support />,
     settings: <Settings />,
   };

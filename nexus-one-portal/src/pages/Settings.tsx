@@ -15,6 +15,7 @@ import {
   Sun,
   Monitor,
   Waves,
+  Sparkles,
   Eye,
   Lock,
   Smartphone
@@ -280,10 +281,11 @@ export const Settings: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card title="Interface Theme" subtitle="Customize the visual atmosphere of Nexus One">
               <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                   {[
                     { id: 'blue', label: 'Blue Focus', icon: Waves, desc: 'Soft blue surfaces' },
                     { id: 'dark', label: 'Midnight Navy', icon: Moon, desc: 'Corporate dark' },
+                    { id: 'aurora', label: 'Aurora', icon: Sparkles, desc: 'Animated indigo glow' },
                     { id: 'light', label: 'Clean Light', icon: Sun, desc: 'High Contrast' }
                   ].map(mode => {
                     const Icon = mode.icon;

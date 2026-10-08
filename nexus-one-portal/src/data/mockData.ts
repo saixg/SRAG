@@ -755,7 +755,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   taskReminders: true,
   eventReminders: true,
   learningReminders: false,
-  theme: 'blue',
+  theme: 'dark',
   density: 'comfortable',
   accentColor: '#4F7CFF',
   language: 'English (US)',

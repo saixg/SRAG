@@ -210,7 +210,7 @@ export interface UserSettings {
   taskReminders: boolean;
   eventReminders: boolean;
   learningReminders: boolean;
-  theme: 'dark' | 'light' | 'blue';
+  theme: 'dark' | 'light' | 'blue' | 'aurora';
   density: 'comfortable' | 'compact';
   accentColor: string;
   language: string;

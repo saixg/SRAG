@@ -124,7 +124,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {/* Profile Dropdown Menu */}
             {isProfileMenuOpen && (
               <div
-                className="absolute right-0 mt-2 w-72 bg-[#111A2E] border border-[#22375F] rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150"
+                className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-1.5rem)] bg-[#111A2E] border border-[#22375F] rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150"
                 onClick={e => e.stopPropagation()}
               >
                 {/* User Info Card */}
@@ -134,8 +134,8 @@ export const TopBar: React.FC<TopBarProps> = ({
                     <StatusBadge type={user.role} size="sm" />
                   </div>
                   <p className="text-[11px] text-slate-300 mt-0.5">{user.roleTitle}</p>
-                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">{user.email}</p>
-                  <p className="text-[10px] text-[#27D8E8] font-mono mt-1">ID: {user.employeeId} â€¢ {user.location}</p>
+                  <p className="text-[11px] text-slate-400 break-all mt-0.5">{user.email}</p>
+                  <p className="text-[11px] text-[#27D8E8] mt-1">ID: {user.employeeId}{user.location ? ` | ${user.location}` : ''}</p>
                 </div>
                 {/* Account actions */}
                 <div className="space-y-1 pt-2 border-t border-[#22375F]">
