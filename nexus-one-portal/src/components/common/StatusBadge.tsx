@@ -4,11 +4,8 @@ import {
   Clock,
   AlertTriangle,
   XCircle,
-  Sparkles,
   User,
-  ShieldCheck,
   Calendar,
-  Building,
   Activity
 } from 'lucide-react';
 import { clsx } from 'clsx';

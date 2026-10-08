@@ -1,18 +1,13 @@
 import React, { useState } from 'react';
 import {
-  Users,
   Target,
   Sparkles,
-  Calendar,
   Plus,
   CheckCircle2,
-  Clock,
   Flame,
   TrendingUp,
-  CheckSquare,
   MessageSquare,
   Award,
-  ArrowRight,
   Filter
 } from 'lucide-react';
 import { Card } from '../components/common/Card';

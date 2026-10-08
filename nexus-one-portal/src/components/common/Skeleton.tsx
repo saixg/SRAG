@@ -1,6 +1,6 @@
 import React from 'react';
 import { clsx } from 'clsx';
-import { FolderOpen, SearchX, Inbox } from 'lucide-react';
+import { SearchX, Inbox } from 'lucide-react';
 import { Button } from './Button';
 
 export const Skeleton: React.FC<{ className?: string }> = ({ className }) => {

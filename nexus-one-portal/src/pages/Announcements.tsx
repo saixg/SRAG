@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import {
-  Megaphone,
   Search,
   Bookmark,
   Heart,
   MessageSquare,
   Share2,
-  CheckCircle2,
   Clock,
-  Filter,
   Pin,
   ArrowRight,
-  Send,
-  Eye
+  Send
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { Announcement, AnnouncementCategory } from '../types';

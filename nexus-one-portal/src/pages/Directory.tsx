@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
 import {
-  Users,
   Search,
   Mail,
   Calendar,
   MapPin,
-  Briefcase,
   Phone,
-  Filter,
   Eye,
-  Sparkles,
-  CheckCircle2,
-  X
+  CheckCircle2
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { DirectoryEmployee } from '../types';

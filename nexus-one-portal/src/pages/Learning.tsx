@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import {
-  GraduationCap,
   Search,
   Play,
-  CheckCircle2,
   Clock,
   Award,
   Star,

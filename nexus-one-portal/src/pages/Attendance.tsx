@@ -4,15 +4,11 @@ import {
   Clock,
   Plus,
   Laptop,
-  CheckCircle2,
   AlertCircle,
   Heart,
   Palmtree,
-  Home,
   Briefcase,
-  ChevronLeft,
-  ChevronRight,
-  Filter
+  ChevronRight
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { LeaveRequest, AttendanceDay, LeaveType } from '../types';

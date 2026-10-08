@@ -1,5 +1,4 @@
 import {
-  User,
   UserRole,
   Announcement,
   LeaveRequest,

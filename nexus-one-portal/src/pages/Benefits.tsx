@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  HeartHandshake,
   Shield,
   Smile,
   Eye,
@@ -9,7 +8,6 @@ import {
   Brain,
   Download,
   CheckCircle2,
-  FileText,
   PhoneCall,
   ArrowRight,
   Plus

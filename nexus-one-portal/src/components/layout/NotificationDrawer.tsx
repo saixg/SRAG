@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Bell, CheckCircle2, Megaphone, Calendar, CheckSquare, GraduationCap, Trash2, X } from 'lucide-react';
+import { Bell, CheckCircle2, Megaphone, Calendar, CheckSquare, GraduationCap, Trash2 } from 'lucide-react';
 import { Drawer } from '../common/Drawer';
-import { Button } from '../common/Button';
 import { INITIAL_NOTIFICATIONS } from '../../data/mockData';
 import { NotificationItem } from '../../types';
 

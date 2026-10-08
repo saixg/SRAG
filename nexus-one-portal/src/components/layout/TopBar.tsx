@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, Search, Bell, Calendar, ChevronDown, User as UserIcon, Settings, LogOut, Command } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole } from '../../types';
 import { StatusBadge } from '../common/StatusBadge';
 
 export interface TopBarProps {

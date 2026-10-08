@@ -1,19 +1,13 @@
 import React, { useState } from 'react';
 import {
-  CheckSquare,
   Clock,
   CheckCircle2,
   XCircle,
-  AlertCircle,
   Plus,
-  Filter,
   Search,
   MessageSquare,
-  UserCheck,
   Calendar,
-  Tag,
   ChevronRight,
-  MoreVertical,
   Check,
   RotateCcw,
   Trash2

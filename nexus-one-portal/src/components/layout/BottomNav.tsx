@@ -5,13 +5,9 @@ import {
   Calendar,
   Users,
   Menu,
-  GraduationCap,
   Receipt,
-  HeartHandshake,
   HelpCircle,
-  Settings,
   Megaphone,
-  CalendarDays,
   User
 } from 'lucide-react';
 import { clsx } from 'clsx';

@@ -5,7 +5,6 @@ import {
   Megaphone,
   CalendarDays,
   Receipt,
-  ShieldAlert,
   GraduationCap,
   Users,
   FolderKanban,
@@ -16,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Layers,
   HeartHandshake
 } from 'lucide-react';
 import { clsx } from 'clsx';

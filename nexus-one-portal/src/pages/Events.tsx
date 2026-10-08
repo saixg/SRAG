@@ -6,16 +6,12 @@ import {
   Clock,
   Video,
   Search,
-  Filter,
   CheckCircle2,
-  Plus,
   Share2,
-  Sparkles,
   ExternalLink
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { StatusBadge } from '../components/common/StatusBadge';
 import { Modal } from '../components/common/Modal';
 import { Tabs } from '../components/common/Tabs';
 import { INITIAL_EVENTS } from '../data/mockData';

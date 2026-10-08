@@ -1,20 +1,15 @@
 import React, { useState } from 'react';
 import {
-  HelpCircle,
   Search,
   ChevronDown,
   ChevronUp,
-  LifeBuoy,
   Laptop,
   Building,
   CreditCard,
   ShieldCheck,
   Plus,
-  Clock,
   CheckCircle2,
-  MessageSquare,
-  FileText,
-  AlertCircle
+  FileText
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -23,7 +18,7 @@ import { Modal } from '../components/common/Modal';
 import { Drawer } from '../components/common/Drawer';
 import { INITIAL_FAQS, INITIAL_TICKETS } from '../data/mockData';
 import { useToast } from '../context/ToastContext';
-import { SupportTicket, TicketPriority, TicketStatus } from '../types';
+import { SupportTicket, TicketPriority } from '../types';
 
 export const Support: React.FC = () => {
   const { addToast } = useToast();

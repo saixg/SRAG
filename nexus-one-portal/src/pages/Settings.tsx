@@ -1,24 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Settings as SettingsIcon,
   User,
-  Bell,
   Palette,
-  Globe,
   Shield,
-  Layers,
   Save,
   RotateCcw,
-  Check,
   ExternalLink,
   Moon,
   Sun,
-  Monitor,
   Waves,
   Sparkles,
-  Eye,
-  Lock,
-  Smartphone
+  Lock
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';

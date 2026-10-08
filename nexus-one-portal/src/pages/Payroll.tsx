@@ -5,12 +5,9 @@ import {
   DollarSign,
   PieChart,
   TrendingUp,
-  ShieldCheck,
   FileText,
   HelpCircle,
-  ArrowUpRight,
   Eye,
-  CheckCircle2,
   Lock
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';

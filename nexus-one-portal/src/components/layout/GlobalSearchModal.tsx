@@ -6,7 +6,6 @@ import {
   CheckSquare,
   Calendar,
   GraduationCap,
-  HelpCircle,
   ArrowRight,
   X,
   Sparkles

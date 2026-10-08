@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   User,
   Mail,
-  Phone,
   MapPin,
   Calendar,
   Briefcase,
@@ -13,9 +12,7 @@ import {
   MessageSquare,
   Plus,
   X,
-  CheckCircle2,
   Sparkles,
-  ShieldCheck,
   Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
