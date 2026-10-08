@@ -85,7 +85,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         isOpen={isScheduleOpen}
         onClose={() => setIsScheduleOpen(false)}
       />
-      <AssistantWidget onNavigate={onRouteChange} />
+      <AssistantWidget />
     </div>
   );
 };
