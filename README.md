@@ -1,95 +1,56 @@
 # Secure Multimodal RAG
 
-Secure enterprise knowledge platform with permission-aware multimodal evidence retrieval.
+Bevel is a tenant-isolated evidence platform. Answers are generated only from rows Postgres RLS already scoped to the caller, then checked by a fail-closed citation verifier.
 
-## Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- PostgreSQL 15+ (for later phases — not required for Phase 0 foundation)
-
-### Setup
+## Run locally
 
 ```bash
-# Create virtual environment
 python -m venv .venv
-
-# Activate (Windows)
 .venv\Scripts\activate
-
-# Activate (macOS/Linux)
-source .venv/bin/activate
-
-# Install dependencies
 pip install -e ".[dev]"
-
-# Copy environment config
-cp .env.example .env
-# Edit .env with your configuration
+copy .env.example .env
+alembic upgrade head
+uvicorn srag.main:app --reload
 ```
 
-### Run Tests
+API: `http://127.0.0.1:8000`  
+Health: `GET /api/v1/health`  
+Dev bearer: `DEV_AUTH_TOKEN` (development and testing only)
+
+Vite workspace and Copilot:
+
+```bash
+cd srag-frontend
+npm install
+npm run dev
+```
+
+Next.js marketing site and Copilot: `web/` (`npm install` then `npm run dev`). See `docs/PRODUCTION.md` for the production lock list and the single-deploy runbook.
+
+## What is implemented
+
+- Supabase JWT auth, dev personas, and `POST /api/v1/tenants/bootstrap`
+- Hybrid retrieval (vector + full text), role and collection scope, tenant-keyed cache
+- `POST /api/v1/query` and `POST /api/v1/query/stream`
+- Document upload, workspace, collections, audit, evidence inspect
+- Async accept path for PDF and images (`202`, status `processing`)
+- Golden retrieval check: `python scripts/eval_golden.py`
+
+Pilot embeddings should be `EMBEDDER_PROVIDER=local` (BGE-M3). Tests and CI force the hashing embedder so they stay offline.
+
+## Tests
 
 ```bash
 pytest
+python scripts/eval_golden.py
 ```
 
-### Run Application
-
-```bash
-# Development server
-uvicorn srag.main:app --reload
-
-# Or directly
-python -m srag.main
-```
-
-### Health Check
+## Layout
 
 ```
-GET /api/v1/health
+src/srag/          API, retrieval, ingestion, generation
+srag-frontend/     Vite app served from dist/ when built
+web/               Next.js App Router site
+migrations/        Alembic
+docs/PRODUCTION.md Production checklist and deploy runbook
 ```
-
-## Project Structure
-
-```
-src/srag/
-├── __init__.py
-├── app.py              # FastAPI application factory
-├── main.py             # Application entrypoint
-├── settings.py         # Environment-driven configuration
-├── logging.py          # Structured logging
-├── api/
-│   ├── __init__.py
-│   └── health.py       # Health endpoint
-├── contracts/
-│   ├── __init__.py
-│   ├── health.py       # Health response models
-│   ├── identity.py     # User/tenant identity models
-│   └── evidence.py     # EvidenceUnit domain model
-└── db/
-    ├── __init__.py
-    └── session.py       # Async database session management
-
-migrations/
-├── env.py              # Alembic async configuration
-├── script.py.mako      # Migration template
-└── versions/           # Migration files
-
-tests/
-├── conftest.py         # Test fixtures
-├── test_health.py      # Health endpoint tests
-├── test_settings.py    # Configuration tests
-└── test_contracts.py   # Domain contract tests
-```
-
-## Architecture
-
-See `secure_multimodal_rag_agent_pack/architecture.md` for the full system architecture.
-
-## Current Phase
-
-**Phase 0 — Engineering Foundation** (complete)
-
-The repository has a working backend, configuration layer, database integration boundary, typed domain contracts, health endpoint, and automated tests.
