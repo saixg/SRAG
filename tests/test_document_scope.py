@@ -27,6 +27,14 @@ from srag.ingestion.embedder import HashingEmbedder
 from srag.retrieval.bundle_builder import EvidenceBundleBuilder
 from srag.retrieval.engine import RetrievalEngine
 
+
+def _search_hit_texts(response: Any) -> list[str]:
+    """Evidence content only — SearchResponse.query echoes the request verbatim,
+    so asserting against the raw response body would trivially contain the
+    query string regardless of what retrieval actually authorized."""
+    return [hit["evidence"].get("text_content") or "" for hit in response.json()["results"]]
+
+
 ADMIN = {"Authorization": "Bearer demo_admin"}
 ENGINEER = {"Authorization": "Bearer demo_engineer"}
 CANARY = "ACL_SCOPED_CANARY_PRESSURE_IS_42_BAR"
@@ -89,7 +97,7 @@ async def test_scoped_canary_never_reaches_retrieval_bundle_or_prompt(client, rl
             "/api/v1/search", headers=ENGINEER, json={"query": CANARY, "top_k": 10}
         )
         assert search.status_code == 200, search.text
-        assert CANARY not in search.text
+        assert not any(CANARY in text for text in _search_hit_texts(search))
 
         query = await client.post("/api/v1/query", headers=ENGINEER, json={"query": CANARY})
         assert query.status_code == 200, query.text
@@ -110,9 +118,15 @@ async def test_scoped_canary_never_reaches_retrieval_bundle_or_prompt(client, rl
         )
 
         bundle = EvidenceBundleBuilder.build(
-            visible, DEV_TENANT_ID, roles=["engineer", "user"], collections=[]
+            DEV_TENANT, CANARY, visible, roles=["engineer", "user"], collections=[]
         )
-        prompt = ContextBuilder.build_prompt("Answer from evidence.", CANARY, bundle)
+        # A distinct, non-sensitive user_query: build_prompt embeds it verbatim by
+        # design (the user is entitled to see their own question), so reusing CANARY
+        # here would make this assertion pass trivially regardless of what the
+        # bundle builder actually filtered.
+        prompt = ContextBuilder.build_prompt(
+            "Answer from evidence.", "What is the operating pressure?", bundle
+        )
         assert CANARY not in prompt
     finally:
         await _cleanup(rls_session, document_id)
@@ -131,7 +145,9 @@ async def test_assign_scope_backfills_existing_evidence(client, rls_session):
         before = await client.post(
             "/api/v1/search", headers=ENGINEER, json={"query": CANARY, "top_k": 10}
         )
-        assert CANARY in before.text, "an open document should be visible to the tenant"
+        assert any(CANARY in text for text in _search_hit_texts(before)), (
+            "an open document should be visible to the tenant"
+        )
 
         restricted = await client.put(
             f"/api/v1/documents/{document_id}/scope",
@@ -151,7 +167,7 @@ async def test_assign_scope_backfills_existing_evidence(client, rls_session):
         after = await client.post(
             "/api/v1/search", headers=ENGINEER, json={"query": CANARY, "top_k": 10}
         )
-        assert CANARY not in after.text
+        assert not any(CANARY in text for text in _search_hit_texts(after))
     finally:
         await _cleanup(rls_session, document_id)
 

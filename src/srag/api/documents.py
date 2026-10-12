@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from srag.api.auth import get_current_user
 from srag.api.dependencies import get_secure_db_session
 from srag.api.limits import get_limiter
+from srag.api.search import get_retrieval_engine
 from srag.contracts.citation import CitationInspect, inspect_evidence
 from srag.contracts.identity import UserIdentity
 from srag.contracts.scope import SecurityScope
@@ -235,6 +236,12 @@ async def assign_scope(
         .values(security_scope=scope.as_dict())
     )
     await session.flush()
+
+    # A cache hit is retrieval output: without this, a caller who searched
+    # before the restriction keeps seeing it until the entry's TTL expires,
+    # which is a fail-closed violation, not just a staleness issue.
+    get_retrieval_engine().cache.invalidate_tenant(user.tenant_id)
+
     await record_audit(
         session,
         user,

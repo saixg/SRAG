@@ -27,6 +27,16 @@ class QueryCache(Protocol):
         roles: str = "",
     ) -> None: ...
 
+    def invalidate_tenant(self, tenant_id: object) -> None:
+        """Drop every cached entry for a tenant.
+
+        Called whenever a document's security_scope changes, so a caller who
+        searched before a restriction cannot keep seeing it from cache until
+        the entry's TTL expires. A cache hit is retrieval output, so this is
+        part of the fail-closed boundary, not just a performance concern.
+        """
+        ...
+
 
 class TenantQueryCache:
     def __init__(self, max_entries: int = 256) -> None:
@@ -62,6 +72,12 @@ class TenantQueryCache:
         while len(self._store) > self._max:
             self._store.popitem(last=False)
 
+    def invalidate_tenant(self, tenant_id: object) -> None:
+        prefix = str(tenant_id)
+        stale = [key for key in self._store if key[0] == prefix]
+        for key in stale:
+            del self._store[key]
+
     @staticmethod
     def _key(
         tenant_id: object, query: str, top_k: int, types: str, roles: str
@@ -91,6 +107,9 @@ class DisabledQueryCache:
         types: str = "",
         roles: str = "",
     ) -> None:
+        return None
+
+    def invalidate_tenant(self, tenant_id: object) -> None:
         return None
 
 
@@ -135,6 +154,16 @@ class RedisQueryCache:
             _encode(value),
             ex=self._ttl,
         )
+
+    def invalidate_tenant(self, tenant_id: object) -> None:
+        pattern = f"srag:q:{tenant_id}:*"
+        cursor = 0
+        while True:
+            cursor, keys = self._client.scan(cursor=cursor, match=pattern, count=200)
+            if keys:
+                self._client.delete(*keys)
+            if cursor == 0:
+                break
 
     @staticmethod
     def _redis_key(tenant_id: object, query: str, top_k: int, types: str, roles: str) -> str:
