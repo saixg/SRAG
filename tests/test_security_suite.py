@@ -19,7 +19,7 @@ from srag.generation.context_builder import ContextBuilder
 from srag.generation.verifier import CitationVerifier
 from srag.retrieval.bundle_builder import EvidenceBundleBuilder, SecurityRejectionError
 from srag.retrieval.cache import TenantQueryCache
-from srag.retrieval.engine import SearchResult
+from srag.retrieval.types import SearchResult
 
 
 def _hit(

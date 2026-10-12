@@ -3,15 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import Protocol, TypeVar
 
 from srag.contracts.evidence import EvidenceType
-
-
-class RankedHit(Protocol):
-    evidence: object
-    score: float
-
+from srag.retrieval.types import SearchResult
 
 TEXT_TYPES = {EvidenceType.TEXT, EvidenceType.OCR, "text", "ocr"}
 TABLE_TYPES = {EvidenceType.TABLE, "table"}
@@ -49,21 +43,18 @@ def modality_of(element_type: object) -> str:
     return "text"
 
 
-T = TypeVar("T")
-
-
-def fuse_modalities(ranked: Iterable[T], top_k: int) -> list[T]:
+def fuse_modalities(ranked: Iterable[SearchResult], top_k: int) -> list[SearchResult]:
     """Keep score order, but surface at least one hit per modality when present."""
-    items: Sequence[T] = list(ranked)
+    items: Sequence[SearchResult] = list(ranked)
     if len(items) <= top_k:
         return list(items)
-    picked: list[T] = []
+    picked: list[SearchResult] = []
     seen_ids: set[str] = set()
     seen_mod: set[str] = set()
     for item in items:
         evidence = item.evidence
-        mod = modality_of(getattr(evidence, "element_type"))
-        key = str(getattr(evidence, "evidence_id"))
+        mod = modality_of(evidence.element_type)
+        key = str(evidence.evidence_id)
         if mod in seen_mod:
             continue
         picked.append(item)
@@ -72,7 +63,7 @@ def fuse_modalities(ranked: Iterable[T], top_k: int) -> list[T]:
         if len(picked) >= top_k:
             return picked
     for item in items:
-        key = str(getattr(item.evidence, "evidence_id"))
+        key = str(item.evidence.evidence_id)
         if key in seen_ids:
             continue
         picked.append(item)

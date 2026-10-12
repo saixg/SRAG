@@ -3,9 +3,9 @@
 import uuid
 
 from srag.contracts.evidence import EvidenceType, EvidenceUnit, Provenance
-from srag.retrieval.engine import SearchResult
 from srag.retrieval.fusion import element_types_for, fuse_modalities, modality_of
 from srag.retrieval.rerank import rerank
+from srag.retrieval.types import SearchResult
 
 
 def _hit(element_type: EvidenceType, score: float) -> SearchResult:

@@ -170,7 +170,7 @@ def _encode(value: Any) -> str:
 
 def _decode(raw: str) -> Any:
     from srag.contracts.evidence import EvidenceUnit
-    from srag.retrieval.engine import SearchResult
+    from srag.retrieval.types import SearchResult
 
     payload = json.loads(raw)
     if payload.get("kind") == "hits":

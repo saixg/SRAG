@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from srag.authz import role_allows, scope_cache_key
-from srag.contracts.evidence import EvidenceUnit
 from srag.contracts.identity import TenantContext
 from srag.db.models import EvidenceUnitModel
 from srag.ingestion.embedder import Embedder
@@ -16,15 +13,10 @@ from srag.retrieval.cache import QueryCache, TenantQueryCache
 from srag.retrieval.fusion import element_types_for, fuse_modalities
 from srag.retrieval.mapping import evidence_from_model
 from srag.retrieval.rerank import rerank
+from srag.retrieval.types import SearchResult
 
 # Lower than the classic 60 so the top ranks matter more on short enterprise passages.
 RRF_K = 40
-
-
-@dataclass
-class SearchResult:
-    evidence: EvidenceUnit
-    score: float
 
 
 class RetrievalEngine:
@@ -50,7 +42,7 @@ class RetrievalEngine:
         acl_key = scope_cache_key(roles, collections)
         cached = self.cache.get(tenant.tenant_id, query, top_k, type_key, acl_key)
         if cached is not None:
-            return cached
+            return list(cached)
         fetch = max(top_k * 4, 20)
         query_embedding = self.embedder.embed_text(query)
         fts_query = func.plainto_tsquery("english", query)

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Any
@@ -22,7 +23,8 @@ from srag.db.audit import record_audit
 from srag.generation.generator import LLMClient
 from srag.generation.verifier import ABSTENTION, CitationVerifier
 from srag.retrieval.bundle_builder import EvidenceBundleBuilder, SecurityRejectionError
-from srag.retrieval.engine import RetrievalEngine, SearchResult
+from srag.retrieval.engine import RetrievalEngine
+from srag.retrieval.types import SearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -97,11 +99,14 @@ class QueryPipeline:
             logger.exception("Authorization failure while building evidence bundle")
             await record_audit(session, user, "query.denied", details={"query": query})
             yield "trace", {"step": "authorization", "status": "denied"}
-            yield "verified", VerifiedResponse(
-                answer=ABSTENTION,
-                claims=[],
-                abstained=True,
-                abstention_reason="authorization_failure",
+            yield (
+                "verified",
+                VerifiedResponse(
+                    answer=ABSTENTION,
+                    claims=[],
+                    abstained=True,
+                    abstention_reason="authorization_failure",
+                ),
             )
             return
 
@@ -112,11 +117,14 @@ class QueryPipeline:
             await record_audit(
                 session, user, "query.abstain", details={"reason": "empty_bundle", "query": query}
             )
-            yield "verified", VerifiedResponse(
-                answer=ABSTENTION,
-                claims=[],
-                abstained=True,
-                abstention_reason="empty_bundle",
+            yield (
+                "verified",
+                VerifiedResponse(
+                    answer=ABSTENTION,
+                    claims=[],
+                    abstained=True,
+                    abstention_reason="empty_bundle",
+                ),
             )
             return
 
@@ -132,11 +140,14 @@ class QueryPipeline:
                 details={"reason": "unparseable_llm_output", "query": query},
             )
             yield "trace", {"step": "generation", "status": "failed"}
-            yield "verified", VerifiedResponse(
-                answer=ABSTENTION,
-                claims=[],
-                abstained=True,
-                abstention_reason="unparseable_llm_output",
+            yield (
+                "verified",
+                VerifiedResponse(
+                    answer=ABSTENTION,
+                    claims=[],
+                    abstained=True,
+                    abstention_reason="unparseable_llm_output",
+                ),
             )
             return
 
@@ -167,5 +178,5 @@ def _coerce_llm_response(raw: LLMResponse) -> LLMResponse:
     return LLMResponse(answer=raw.answer, claims=claims)
 
 
-def authorized_hits(hits: list[SearchResult], tenant_id) -> list[SearchResult]:
+def authorized_hits(hits: list[SearchResult], tenant_id: uuid.UUID) -> list[SearchResult]:
     return [hit for hit in hits if hit.evidence.tenant_id == tenant_id]

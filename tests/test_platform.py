@@ -20,7 +20,8 @@ from srag.ingestion.embedder import HashingEmbedder
 from srag.ingestion.jobs import IngestJob, process_job
 from srag.retrieval.bundle_builder import EvidenceBundleBuilder, SecurityRejectionError
 from srag.retrieval.cache import RedisQueryCache, TenantQueryCache
-from srag.retrieval.engine import RetrievalEngine, SearchResult
+from srag.retrieval.engine import RetrievalEngine
+from srag.retrieval.types import SearchResult
 from srag.settings import Environment, Settings, get_settings
 
 
