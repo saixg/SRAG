@@ -1,43 +1,34 @@
-"""Health endpoint — reports application and component health.
-
-This is the first real endpoint. It returns the application's health status
-and can be extended to report per-component health (database, cache, etc.).
-"""
+"""Health endpoint — process liveness plus a database ping."""
 
 from __future__ import annotations
 
 from fastapi import APIRouter
+from sqlalchemy import text
 
 from srag.contracts.health import ComponentHealth, HealthResponse, ServiceStatus
+from srag.db.session import get_engine
 from srag.settings import get_settings
 
 router = APIRouter(tags=["health"])
 
 
-@router.get(
-    "/health",
-    response_model=HealthResponse,
-    summary="Application health check",
-    description="Returns application health status and component details.",
-)
+@router.get("/health", response_model=HealthResponse, summary="Application health check")
 async def health_check() -> HealthResponse:
-    """Return current health status.
-
-    In Phase 0, this reports basic application health.
-    In later phases, this will probe database connectivity,
-    embedding service availability, etc.
-    """
     settings = get_settings()
-
-    components: list[ComponentHealth] = [
-        ComponentHealth(
-            name="api",
-            status=ServiceStatus.HEALTHY,
-            detail="FastAPI application is running",
-        ),
+    components = [
+        ComponentHealth(name="api", status=ServiceStatus.HEALTHY, detail="FastAPI application is running"),
     ]
+    try:
+        async with get_engine().connect() as connection:
+            await connection.execute(text("SELECT 1"))
+        components.append(
+            ComponentHealth(name="database", status=ServiceStatus.HEALTHY, detail="PostgreSQL reachable")
+        )
+    except Exception as exc:
+        components.append(
+            ComponentHealth(name="database", status=ServiceStatus.UNHEALTHY, detail=type(exc).__name__)
+        )
 
-    # Overall status is the worst component status
     overall = ServiceStatus.HEALTHY
     for component in components:
         if component.status == ServiceStatus.UNHEALTHY:
