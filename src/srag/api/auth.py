@@ -49,7 +49,7 @@ def _tenant_id_from_claims(payload: dict[str, Any]) -> uuid.UUID:
 
 
 def _collections_from_claims(payload: dict[str, Any]) -> list[str]:
-    metadata = payload.get("app_metadata") if isinstance(payload.get("app_metadata"), dict) else {}
+    metadata = _object_claim(payload, "app_metadata")
     raw = metadata.get("collections") or []
     if not isinstance(raw, list):
         return []
@@ -57,7 +57,7 @@ def _collections_from_claims(payload: dict[str, Any]) -> list[str]:
 
 
 def _roles_from_claims(payload: dict[str, Any]) -> list[str]:
-    metadata = payload.get("app_metadata") if isinstance(payload.get("app_metadata"), dict) else {}
+    metadata = _object_claim(payload, "app_metadata")
     raw_roles = metadata.get("roles") or []
     roles: list[str] = [str(role) for role in raw_roles] if isinstance(raw_roles, list) else []
     jwt_role = payload.get("role")
@@ -75,7 +75,7 @@ def identity_from_jwt_payload(payload: dict[str, Any]) -> UserIdentity:
     except ValueError as exc:
         raise _UNAUTH from exc
 
-    metadata = payload.get("app_metadata") if isinstance(payload.get("app_metadata"), dict) else {}
+    metadata = _object_claim(payload, "app_metadata")
     tenant_id = _tenant_id_from_claims(payload)
     return UserIdentity(
         user_id=user_id,

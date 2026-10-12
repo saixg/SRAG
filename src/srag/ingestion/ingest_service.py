@@ -20,7 +20,7 @@ IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".tiff", ".tif", ".webp"}
 PDF_SUFFIXES = {".pdf"}
 
 
-class UnsupportedDocumentType(ValueError):
+class UnsupportedDocumentTypeError(ValueError):
     pass
 
 
@@ -58,4 +58,4 @@ class IngestService:
                     file_path=handle.name,
                     metadata=metadata,
                 )
-        raise UnsupportedDocumentType(f"Unsupported file type: {suffix or filename}")
+        raise UnsupportedDocumentTypeError(f"Unsupported file type: {suffix or filename}")

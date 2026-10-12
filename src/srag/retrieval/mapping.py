@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from pydantic import ValidationError
+from typing import TypeVar
+
+from pydantic import BaseModel, ValidationError
 
 from srag.contracts.evidence import EvidenceUnit, Provenance, SourceLocation
 from srag.db.models import EvidenceUnitModel
 
+M = TypeVar("M", bound=BaseModel)
 
-def _parse(model_cls, data):  # type: ignore[no-untyped-def]
+
+def _parse(model_cls: type[M], data: object) -> M | None:
+    """Best-effort revive of a JSONB column; a malformed row loses the field, not the row."""
     if not data:
         return None
     try:

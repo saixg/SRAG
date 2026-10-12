@@ -30,7 +30,7 @@ def latency_p95(samples_ms: list[float]) -> float:
     if not samples_ms:
         return 0.0
     ordered = sorted(samples_ms)
-    index = max(0, int(round(0.95 * (len(ordered) - 1))))
+    index = max(0, round(0.95 * (len(ordered) - 1)))
     return ordered[index]
 
 

@@ -13,6 +13,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -72,7 +73,7 @@ class EvidenceUnit(BaseModel):
 
     # Content — at least one of these should be populated
     text_content: str | None = None
-    structured_content: dict | None = None  # for tables, structured data
+    structured_content: dict[str, Any] | None = None  # for tables, structured data
     visual_reference_id: str | None = None  # reference to stored visual asset
 
     # Location and provenance
@@ -80,7 +81,7 @@ class EvidenceUnit(BaseModel):
     provenance: Provenance | None = None
 
     # Security scope
-    security_scope: dict = Field(
+    security_scope: dict[str, Any] = Field(
         default_factory=dict,
         description="Additional security metadata (classification, compartments, etc.)",
     )

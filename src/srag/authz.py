@@ -7,6 +7,8 @@ collection. Admin satisfies both checks.
 
 from __future__ import annotations
 
+from typing import Any
+
 
 def _labels(values: object) -> set[str]:
     if not isinstance(values, list):
@@ -17,7 +19,7 @@ def _labels(values: object) -> set[str]:
 def role_allows(
     roles: list[str] | None,
     collections: list[str] | None,
-    security_scope: dict | None,
+    security_scope: dict[str, Any] | None,
 ) -> bool:
     scope = security_scope or {}
     required_roles = scope.get("roles")

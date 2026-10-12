@@ -16,7 +16,7 @@ from srag.contracts.identity import TenantContext
 from srag.generation.generator import LLMClient
 
 
-class UnsafeSQLRejected(PermissionError):
+class UnsafeSQLRejectedError(PermissionError):
     """Raised when code attempts to run LLM-generated SQL."""
 
 
@@ -25,7 +25,7 @@ class TextToSQLEngine:
         self.llm = llm
 
     async def generate_sql(self, query: str, schema_context: str) -> str:
-        raise UnsafeSQLRejected(
+        raise UnsafeSQLRejectedError(
             "Free-form text-to-SQL is disabled. The model cannot query the database."
         )
 
@@ -36,6 +36,6 @@ class TextToSQLEngine:
         query: str,
         schema_context: str,
     ) -> list[dict[str, Any]]:
-        raise UnsafeSQLRejected(
+        raise UnsafeSQLRejectedError(
             "Free-form text-to-SQL is disabled. The model cannot query the database."
         )
