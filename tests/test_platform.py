@@ -129,10 +129,24 @@ def test_production_locks(monkeypatch):
         supabase_jwt_secret="jwt-secret",
         embedder_provider="hashing",
         cache_backend="disabled",
+        groq_api_key="gsk-test",
         _env_file=None,  # type: ignore[call-arg]
     )
     with pytest.raises(RuntimeError, match="hashing"):
         settings.validate_runtime_security()
+
+    no_llm = Settings(
+        app_env=Environment.PRODUCTION,
+        app_debug=False,
+        secret_key="real-secret",
+        supabase_jwt_secret="jwt-secret",
+        embedder_provider="local",
+        cache_backend="disabled",
+        cors_origins="https://bevel.example",
+        _env_file=None,  # type: ignore[call-arg]
+    )
+    with pytest.raises(RuntimeError, match="GROQ_API_KEY"):
+        no_llm.validate_runtime_security()
 
     ready = Settings(
         app_env=Environment.PRODUCTION,
@@ -142,6 +156,7 @@ def test_production_locks(monkeypatch):
         embedder_provider="local",
         cache_backend="disabled",
         cors_origins="https://bevel.example",
+        groq_api_key="gsk-test",
         _env_file=None,  # type: ignore[call-arg]
     )
     ready.validate_runtime_security()

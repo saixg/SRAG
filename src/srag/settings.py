@@ -107,6 +107,10 @@ class Settings(BaseSettings):
             raise RuntimeError("DEV_AUTH_TOKEN must not be set in production")
         if self.embedder_provider == EmbedderProvider.HASHING:
             raise RuntimeError("EMBEDDER_PROVIDER=hashing is not allowed in production")
+        if self.groq_api_key is None:
+            # Without a key get_llm_client falls back to StubLLMClient, which would
+            # serve canned answers over real evidence rather than failing loudly.
+            raise RuntimeError("GROQ_API_KEY is required in production")
         if self.cache_backend == CacheBackend.MEMORY:
             raise RuntimeError("CACHE_BACKEND must be redis or disabled in production")
         if self.cache_backend == CacheBackend.REDIS and not self.redis_url:
