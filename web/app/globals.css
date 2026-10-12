@@ -1,0 +1,77 @@
+:root {
+  --color-paper-white: #ffffff;
+  --color-charcoal: #1f2025;
+  --color-ink: #222326;
+  --color-cloud-card: #ebf0f8;
+  --color-body-gray: #747679;
+  --color-coral-signal: #ffab94;
+  --gradient-hero-sky: linear-gradient(#d2e5ff, #fff9ee);
+  --text-hero-display: 80px;
+  --leading-hero-display: 1;
+  --tracking-hero-display: -2.4px;
+  --radius-navigation: 32px;
+  --radius-cards: 24px;
+  --shadow-md-2: rgba(0, 0, 0, 0.15) 0px 2px 16px 0px;
+  --copilot-width: 420px;
+  --font-sans: Inter, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  background: var(--color-paper-white);
+  color: var(--color-ink);
+}
+a { color: inherit; text-decoration: none; }
+.nav {
+  position: sticky;
+  top: 16px;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+}
+.nav-inner {
+  width: min(1180px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--color-paper-white);
+  border-radius: var(--radius-navigation);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-md-2);
+}
+.nav-inner a { color: var(--color-body-gray); font-weight: 500; }
+.nav-inner a[data-active="true"], .brand { color: var(--color-ink); }
+.hero {
+  margin: 24px auto 0;
+  max-width: 1180px;
+  border-radius: 32px;
+  background: var(--gradient-hero-sky);
+  padding: 80px 32px 48px;
+  text-align: center;
+}
+.hero h1 {
+  margin: 0 auto;
+  max-width: 920px;
+  font-size: clamp(48px, 8vw, var(--text-hero-display));
+  line-height: var(--leading-hero-display);
+  letter-spacing: var(--tracking-hero-display);
+  font-weight: 600;
+}
+.wrap { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 32px; text-align: left; }
+.card { background: var(--color-cloud-card); border-radius: var(--radius-cards); padding: 24px; }
+.pill {
+  border: 0;
+  border-radius: 9999px;
+  padding: 10px 16px;
+  background: var(--color-charcoal);
+  color: var(--color-cloud-card);
+  cursor: pointer;
+}
+.muted { color: var(--color-body-gray); }
+@media (max-width: 800px) {
+  .nav-inner { flex-wrap: wrap; }
+}
