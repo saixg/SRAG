@@ -6,13 +6,14 @@ and preserving multimodal provenance (modality, bbox, page, etc.).
 
 from srag.contracts.bundle import EvidenceBundle
 
+
 class ContextBuilder:
     """Safely builds the LLM context from an authorized EvidenceBundle."""
 
     @staticmethod
     def build_context(bundle: EvidenceBundle) -> str:
         """Builds a formatted string containing all evidence.
-        
+
         The format cleanly separates evidence from system instructions using
         clear block delimiters to resist prompt injection.
         """
@@ -25,21 +26,21 @@ class ContextBuilder:
             parts.append(f"[EVIDENCE {item.evidence_id}]")
             parts.append(f"Document ID: {item.document_id}")
             parts.append(f"Filename: {item.source_filename}")
-            
+
             if item.page_number is not None:
                 parts.append(f"Page: {item.page_number}")
-                
+
             parts.append(f"Modality: {item.element_type}")
-            
+
             if item.element_id:
                 parts.append(f"Element: {item.element_id}")
-                
+
             if item.bbox:
                 parts.append(f"Region: {item.bbox}")
-                
+
             if item.visual_reference_id:
                 parts.append(f"Visual Reference: {item.visual_reference_id}")
-                
+
             parts.append("\nContent:")
             content_str = (
                 str(item.content)

@@ -38,10 +38,16 @@ async def resolve_citations(
     if not body.evidence_ids:
         return []
     rows = (
-        await session.execute(
-            select(EvidenceUnitModel).where(EvidenceUnitModel.evidence_id.in_(body.evidence_ids))
+        (
+            await session.execute(
+                select(EvidenceUnitModel).where(
+                    EvidenceUnitModel.evidence_id.in_(body.evidence_ids)
+                )
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     found = {row.evidence_id: row for row in rows}
     resolved: list[CitationInspect] = []
     for evidence_id in body.evidence_ids:
@@ -67,7 +73,9 @@ async def list_evidence(
     if element_type is not None:
         stmt = stmt.where(EvidenceUnitModel.element_type == element_type)
     if page_number is not None:
-        stmt = stmt.where(EvidenceUnitModel.source_location["page_number"].as_integer() == page_number)
+        stmt = stmt.where(
+            EvidenceUnitModel.source_location["page_number"].as_integer() == page_number
+        )
     stmt = stmt.limit(limit)
     rows = (await session.execute(stmt)).scalars().all()
     return [evidence_from_model(row) for row in rows if _visible(row, user)]

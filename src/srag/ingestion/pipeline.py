@@ -18,15 +18,15 @@ from srag.ingestion.text_processor import TextProcessor
 
 class IngestionPipeline:
     """The secure ingestion pipeline.
-    
+
     Takes raw text, creates a Document, chunks it, embeds it, and stores EvidenceUnits.
     Requires a valid TenantContext to ensure all inserted data is securely scoped.
     """
-    
+
     def __init__(self, embedder: Embedder, processor: TextProcessor) -> None:
         self.embedder = embedder
         self.processor = processor
-        
+
     async def ingest_text_document(
         self,
         session: AsyncSession,
@@ -36,10 +36,10 @@ class IngestionPipeline:
         metadata: dict[str, Any] | None = None,
     ) -> Document:
         """Ingest a plain text document securely."""
-        
+
         # 1. Create Document
         content_hash = hashlib.sha256(text_content.encode("utf-8")).hexdigest()
-        
+
         doc = Document(
             tenant_id=tenant.tenant_id,
             filename=filename,
@@ -48,15 +48,15 @@ class IngestionPipeline:
         )
         session.add(doc)
         await session.flush()  # To get the doc.id
-        
+
         # 2. Chunk text
         chunks = self.processor.chunk_text(text_content)
         if not chunks:
             return doc
-            
+
         # 3. Embed chunks
         embeddings = self.embedder.embed_batch(chunks)
-        
+
         # 4. Create EvidenceUnits
         evidence_units = []
         for i, (chunk, embedding) in enumerate(zip(chunks, embeddings, strict=True)):
@@ -77,9 +77,9 @@ class IngestionPipeline:
                 security_scope={},  # Base scope is just tenant_id, added above
             )
             evidence_units.append(unit)
-            
+
         # Bulk save
         session.add_all(evidence_units)
         await session.flush()
-        
+
         return doc

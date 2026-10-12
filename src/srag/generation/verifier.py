@@ -43,7 +43,9 @@ class CitationVerifier:
                         evidence_id=claim.evidence_id,
                         supporting_quote=claim.supporting_quote,
                         is_verified=False,
-                        verification_error=f"Unauthorized or fabricated evidence ID: {claim.evidence_id}",
+                        verification_error=(
+                            f"Unauthorized or fabricated evidence ID: {claim.evidence_id}"
+                        ),
                     )
                 )
                 continue

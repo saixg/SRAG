@@ -59,22 +59,30 @@ async def test_rls_read_isolation(rls_session):
         assert CANARY_B in all_rows[0].text_content
 
         leaked = (
-            await session.execute(
-                select(EvidenceUnitModel).where(
-                    EvidenceUnitModel.text_content.ilike(f"%{CANARY_A}%")
+            (
+                await session.execute(
+                    select(EvidenceUnitModel).where(
+                        EvidenceUnitModel.text_content.ilike(f"%{CANARY_A}%")
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         assert leaked == []
 
         # B's own data is visible
         own = (
-            await session.execute(
-                select(EvidenceUnitModel).where(
-                    EvidenceUnitModel.text_content.ilike(f"%{CANARY_B}%")
+            (
+                await session.execute(
+                    select(EvidenceUnitModel).where(
+                        EvidenceUnitModel.text_content.ilike(f"%{CANARY_B}%")
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         assert len(own) == 1
 
     # Cleanup
@@ -93,9 +101,7 @@ async def test_rls_write_isolation(rls_session):
 
     async with rls_session(tenant_a) as session:
         session.add(Tenant(id=tenant_a, name="Tenant A"))
-        doc_a = Document(
-            tenant_id=tenant_a, filename="a.txt", content_hash="a-hash"
-        )
+        doc_a = Document(tenant_id=tenant_a, filename="a.txt", content_hash="a-hash")
         session.add(doc_a)
         await session.flush()
         session.add(
@@ -125,9 +131,7 @@ async def test_rls_write_isolation(rls_session):
     async with rls_session(tenant_a) as session:
         row = (
             await session.execute(
-                select(EvidenceUnitModel).where(
-                    EvidenceUnitModel.evidence_id == evidence_id
-                )
+                select(EvidenceUnitModel).where(EvidenceUnitModel.evidence_id == evidence_id)
             )
         ).scalar_one()
         assert CANARY_A in row.text_content
@@ -152,7 +156,10 @@ async def test_rls_fail_closed_without_tenant_context(rls_session):
 
         # An insert must be rejected by RLS (fail closed)
         import sqlalchemy
-        with pytest.raises(sqlalchemy.exc.ProgrammingError, match="new row violates row-level security policy"):
+
+        with pytest.raises(
+            sqlalchemy.exc.ProgrammingError, match="new row violates row-level security policy"
+        ):
             session.add(Tenant(id=ghost_tenant, name="Should Not Exist"))
             await session.flush()
         await session.rollback()
@@ -264,7 +271,6 @@ async def test_search_endpoint_cross_tenant_isolation(client, app, rls_session):
 @pytest.mark.asyncio
 async def test_evidence_endpoint_hides_foreign_ids(client, rls_session):
     """S-002 / S-012: foreign evidence IDs return generic 404."""
-    from srag.api.auth import DEV_TENANT_ID
 
     other_tenant = uuid.uuid4()
     evidence_id = uuid.uuid4()

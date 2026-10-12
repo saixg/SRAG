@@ -2,13 +2,13 @@ from srag.db.models import AuditLog, Base, Document, EvidenceUnitModel, Tenant, 
 from srag.db.session import close_engine, get_engine, get_session_factory
 
 __all__ = [
+    "AuditLog",
     "Base",
-    "Tenant",
     "Document",
     "EvidenceUnitModel",
+    "Tenant",
     "User",
-    "AuditLog",
+    "close_engine",
     "get_engine",
     "get_session_factory",
-    "close_engine",
 ]

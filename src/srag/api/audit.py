@@ -37,11 +37,7 @@ async def list_audit_events(
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> list[AuditEventResponse]:
     rows = (
-        (
-            await session.execute(
-                select(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit)
-            )
-        )
+        (await session.execute(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit)))
         .scalars()
         .all()
     )

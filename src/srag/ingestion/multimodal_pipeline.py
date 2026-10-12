@@ -95,7 +95,8 @@ class MultimodalPipeline:
         if texts:
             embeddings = self.embedder.embed_batch(texts)
             for unit, embedding in zip(embed_targets, embeddings, strict=True):
-                unit.embedding = embedding
+                # pgvector accepts a plain list; the Mapped type is the column, not the value.
+                unit.embedding = embedding  # type: ignore[assignment]
 
         session.add_all(units)
         await session.flush()
@@ -103,7 +104,9 @@ class MultimodalPipeline:
         return doc
 
 
-def _extract_candidates(file_path: str, filename: str, metadata: dict[str, Any]) -> list[dict[str, Any]]:
+def _extract_candidates(
+    file_path: str, filename: str, metadata: dict[str, Any]
+) -> list[dict[str, Any]]:
     is_image = filename.lower().endswith((".png", ".jpg", ".jpeg", ".tiff", ".tif", ".webp"))
     parser_type = metadata.get("parser", "docling")
     if is_image:
@@ -116,7 +119,9 @@ def _extract_candidates(file_path: str, filename: str, metadata: dict[str, Any])
         else:
             candidates = extract_with_docling(file_path, filename)
     except RuntimeError:
-        logger.warning("primary parser unavailable", extra={"filename": filename, "parser": parser_type})
+        logger.warning(
+            "primary parser unavailable", extra={"filename": filename, "parser": parser_type}
+        )
     if candidates:
         return candidates
     return _safe_ocr(file_path, filename)

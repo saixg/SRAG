@@ -16,17 +16,23 @@ router = APIRouter(tags=["health"])
 async def health_check() -> HealthResponse:
     settings = get_settings()
     components = [
-        ComponentHealth(name="api", status=ServiceStatus.HEALTHY, detail="FastAPI application is running"),
+        ComponentHealth(
+            name="api", status=ServiceStatus.HEALTHY, detail="FastAPI application is running"
+        ),
     ]
     try:
         async with get_engine().connect() as connection:
             await connection.execute(text("SELECT 1"))
         components.append(
-            ComponentHealth(name="database", status=ServiceStatus.HEALTHY, detail="PostgreSQL reachable")
+            ComponentHealth(
+                name="database", status=ServiceStatus.HEALTHY, detail="PostgreSQL reachable"
+            )
         )
     except Exception as exc:
         components.append(
-            ComponentHealth(name="database", status=ServiceStatus.UNHEALTHY, detail=type(exc).__name__)
+            ComponentHealth(
+                name="database", status=ServiceStatus.UNHEALTHY, detail=type(exc).__name__
+            )
         )
 
     overall = ServiceStatus.HEALTHY

@@ -10,7 +10,7 @@ from srag.contracts.evidence import EvidenceType
 
 class EvidenceBundleItem(BaseModel):
     """A single authorized evidence item presented to the LLM.
-    
+
     This model deliberately exposes only the fields required for generation
     and citation, stripping away internal system IDs, unneeded metadata,
     and ensuring no leakage occurs.
@@ -33,7 +33,7 @@ class EvidenceBundleItem(BaseModel):
     element_id: str | None = None
     bbox: list[float] | None = None
     coordinate_system: str | None = None
-    
+
     relevance_score: float
 
 

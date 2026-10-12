@@ -19,7 +19,9 @@ async def test_multimodal_retrieval(rls_session):
 
     async with rls_session(tenant_id) as session:
         session.add(Tenant(id=tenant_id, name="Test Tenant"))
-        doc = Document(id=uuid.uuid4(), tenant_id=tenant_id, filename="test.pdf", content_hash="hash")
+        doc = Document(
+            id=uuid.uuid4(), tenant_id=tenant_id, filename="test.pdf", content_hash="hash"
+        )
         session.add(doc)
         await session.flush()
         session.add_all(

@@ -41,7 +41,9 @@ async def workspace_summary(
     documents = (await session.execute(select(Document))).scalars().all()
     type_rows = (
         await session.execute(
-            select(EvidenceUnitModel.element_type, func.count()).group_by(EvidenceUnitModel.element_type)
+            select(EvidenceUnitModel.element_type, func.count()).group_by(
+                EvidenceUnitModel.element_type
+            )
         )
     ).all()
     audit_count = (await session.execute(select(func.count()).select_from(AuditLog))).scalar_one()
@@ -72,7 +74,9 @@ async def list_collections(
         name = (doc.metadata_ or {}).get("collection") if isinstance(doc.metadata_, dict) else None
         if name:
             counts[str(name)] = counts.get(str(name), 0) + 1
-    return [CollectionSummary(name=name, document_count=count) for name, count in sorted(counts.items())]
+    return [
+        CollectionSummary(name=name, document_count=count) for name, count in sorted(counts.items())
+    ]
 
 
 @router.get("/collections/{name}/documents", response_model=list[DocumentResponse])

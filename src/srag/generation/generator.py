@@ -37,7 +37,9 @@ class LLMClient(ABC):
 class StubLLMClient(LLMClient):
     async def generate(self, query: str, bundle: EvidenceBundle) -> LLMResponse:
         if not bundle.items:
-            return LLMResponse(answer="I could not find any evidence to answer your query.", claims=[])
+            return LLMResponse(
+                answer="I could not find any evidence to answer your query.", claims=[]
+            )
 
         first_item = bundle.items[0]
         content_str = (
@@ -70,7 +72,9 @@ class GroqLLMClient(LLMClient):
 
     async def generate(self, query: str, bundle: EvidenceBundle) -> LLMResponse:
         if not bundle.items:
-            return LLMResponse(answer="I could not find any evidence to answer your query.", claims=[])
+            return LLMResponse(
+                answer="I could not find any evidence to answer your query.", claims=[]
+            )
 
         prompt = ContextBuilder.build_prompt(SYSTEM_INSTRUCTIONS, query, bundle)
         response = await self.client.chat.completions.create(

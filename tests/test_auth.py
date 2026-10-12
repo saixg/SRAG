@@ -37,9 +37,10 @@ def test_supabase_jwt_requires_tenant(monkeypatch):
 
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
     # Patch cached settings used by auth
-    monkeypatch.setattr("srag.api.auth.get_settings", lambda: settings.model_copy(
-        update={"supabase_jwt_secret": SecretStr(secret)}
-    ))
+    monkeypatch.setattr(
+        "srag.api.auth.get_settings",
+        lambda: settings.model_copy(update={"supabase_jwt_secret": SecretStr(secret)}),
+    )
 
     payload = {
         "sub": str(uuid.uuid4()),

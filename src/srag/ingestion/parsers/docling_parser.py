@@ -6,7 +6,12 @@ import logging
 from typing import Any
 
 from srag.contracts.evidence import EvidenceType
-from srag.ingestion.parsers.layout import bbox_from_docling, first_prov, structured_table, table_text
+from srag.ingestion.parsers.layout import (
+    bbox_from_docling,
+    first_prov,
+    structured_table,
+    table_text,
+)
 from srag.ingestion.parsers.visual import classify_visual, visual_caption
 
 logger = logging.getLogger(__name__)
@@ -26,7 +31,9 @@ def extract_with_docling(file_path: str, filename: str) -> list[dict[str, Any]]:
         content = (text_item.get("text") or "").strip()
         if not content:
             continue
-        candidates.append(_candidate(filename, f"text_{idx}", EvidenceType.TEXT.value, text_item, content))
+        candidates.append(
+            _candidate(filename, f"text_{idx}", EvidenceType.TEXT.value, text_item, content)
+        )
 
     for idx, table_item in enumerate(doc_dict.get("tables") or []):
         structured = structured_table(table_item, idx)

@@ -21,8 +21,12 @@ class Tenant(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), onupdate=lambda: datetime.now(UTC)
+    )
 
 
 class Document(Base):
@@ -35,8 +39,12 @@ class Document(Base):
     filename: Mapped[str] = mapped_column(String(1024), nullable=False)
     content_hash: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     metadata_: Mapped[dict[str, Any]] = mapped_column("metadata", JSONB, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), onupdate=lambda: datetime.now(UTC)
+    )
 
     tenant: Mapped[Tenant] = relationship("Tenant")
 
@@ -44,7 +52,9 @@ class Document(Base):
 class EvidenceUnitModel(Base):
     __tablename__ = "evidence_units"
 
-    evidence_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    evidence_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
@@ -62,8 +72,12 @@ class EvidenceUnitModel(Base):
     security_scope: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     embedding: Mapped[Vector | None] = mapped_column(Vector(1024))
     fts_vector: Mapped[TSVECTOR | None] = mapped_column(TSVECTOR)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), onupdate=lambda: datetime.now(UTC)
+    )
 
     document: Mapped[Document] = relationship("Document")
     tenant: Mapped[Tenant] = relationship("Tenant")
@@ -93,8 +107,12 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     roles: Mapped[list[Any]] = mapped_column(JSONB, default=list)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), onupdate=lambda: datetime.now(UTC)
+    )
 
     tenant: Mapped[Tenant] = relationship("Tenant")
 
@@ -112,4 +130,6 @@ class AuditLog(Base):
     resource_id: Mapped[str | None] = mapped_column(String(255))
     details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     ip_address: Mapped[str | None] = mapped_column(String(45))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True
+    )

@@ -19,16 +19,18 @@ os.environ["APP_ENV"] = "testing"
 os.environ["APP_DEBUG"] = "false"
 os.environ["EMBEDDER_PROVIDER"] = "hashing"
 
+
 @pytest.fixture(scope="session")
 def db_engine():
     """Session-scoped database engine."""
     from srag.db.session import get_engine
+
     return get_engine()
+
 
 @pytest.fixture
 async def db_session(db_engine):
     """Function-scoped, clean database session without tenant context."""
-    from srag.db.session import get_session_factory
     factory = get_session_factory(db_engine)
     session = factory()
     try:
@@ -38,6 +40,7 @@ async def db_session(db_engine):
     finally:
         await session.rollback()
         await session.close()
+
 
 @pytest.fixture
 def rls_session():
@@ -51,7 +54,6 @@ def rls_session():
     Passing None yields a bare session with no tenant context — useful to
     prove fail-closed behavior (S-011).
     """
-    from srag.db.session import get_session_factory
     factory = get_session_factory()
 
     @asynccontextmanager
@@ -65,7 +67,7 @@ def rls_session():
                     text("SELECT set_config('app.current_tenant_id', :tid, true)"),
                     {"tid": str(tenant_id)},
                 )
-            
+
             # Switch to authenticated role which doesn't have BYPASSRLS
             await session.execute(text("SET LOCAL ROLE authenticated"))
             yield session
@@ -86,8 +88,8 @@ def app():
     from srag.settings import get_settings
 
     get_settings.cache_clear()
-    from srag.ingestion.embedder import get_embedder
     from srag.api.search import get_retrieval_engine
+    from srag.ingestion.embedder import get_embedder
 
     get_embedder.cache_clear()
     get_retrieval_engine.cache_clear()

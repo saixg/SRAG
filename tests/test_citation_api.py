@@ -16,9 +16,7 @@ async def test_resolve_and_inspect_authorized_evidence(client, rls_session):
     evidence_id = uuid.uuid4()
     doc_id = uuid.uuid4()
     async with rls_session(DEV_TENANT_ID) as session:
-        if (
-            await session.get(Tenant, DEV_TENANT_ID)
-        ) is None:
+        if (await session.get(Tenant, DEV_TENANT_ID)) is None:
             session.add(Tenant(id=DEV_TENANT_ID, name="Development Tenant"))
         session.add(
             Document(id=doc_id, tenant_id=DEV_TENANT_ID, filename="manual.pdf", content_hash="h")
@@ -31,7 +29,11 @@ async def test_resolve_and_inspect_authorized_evidence(client, rls_session):
                 page_id="3",
                 element_type="table",
                 text_content="V-104 operating pressure 42 bar",
-                source_location={"page_number": 3, "bbox": [1.0, 2.0, 3.0, 4.0], "section": "tables"},
+                source_location={
+                    "page_number": 3,
+                    "bbox": [1.0, 2.0, 3.0, 4.0],
+                    "section": "tables",
+                },
                 provenance={"source_filename": "manual.pdf", "extraction_method": "test"},
             )
         )

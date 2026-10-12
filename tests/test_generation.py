@@ -20,9 +20,9 @@ def create_mock_bundle() -> EvidenceBundle:
                 content="The project deadline is 15 October 2026.",
                 citation_location="Document: policy.pdf, Page: 5",
                 source_filename="policy.pdf",
-                relevance_score=0.99
+                relevance_score=0.99,
             )
-        ]
+        ],
     )
 
 
@@ -35,15 +35,15 @@ def test_verifier_passes_valid_claim():
             Claim(
                 claim="The project deadline is 15 October 2026.",
                 evidence_id="ev_123",
-                supporting_quote="Project deadline is 15 October"  # exact substring match
+                supporting_quote="Project deadline is 15 October",  # exact substring match
             )
-        ]
+        ],
     )
     # Adjust quote to actually match the bundle exactly (case sensitive in current implementation)
     llm_response.claims[0].supporting_quote = "project deadline is 15 October 2026"
-    
+
     verified_response = CitationVerifier.verify(bundle, llm_response)
-    
+
     assert len(verified_response.claims) == 1
     verified_claim = verified_response.claims[0]
     assert verified_claim.is_verified is True
@@ -60,13 +60,13 @@ def test_verifier_rejects_fabricated_evidence_id():
             Claim(
                 claim="Some fake claim.",
                 evidence_id="ev_999",  # Does not exist
-                supporting_quote="Doesn't matter"
+                supporting_quote="Doesn't matter",
             )
-        ]
+        ],
     )
-    
+
     verified_response = CitationVerifier.verify(bundle, llm_response)
-    
+
     assert len(verified_response.claims) == 1
     verified_claim = verified_response.claims[0]
     assert verified_claim.is_verified is False
@@ -82,13 +82,13 @@ def test_verifier_rejects_hallucinated_quote():
             Claim(
                 claim="The deadline is in November.",
                 evidence_id="ev_123",  # Valid ID
-                supporting_quote="deadline is in November"  # Hallucinated quote
+                supporting_quote="deadline is in November",  # Hallucinated quote
             )
-        ]
+        ],
     )
-    
+
     verified_response = CitationVerifier.verify(bundle, llm_response)
-    
+
     assert len(verified_response.claims) == 1
     verified_claim = verified_response.claims[0]
     assert verified_claim.is_verified is False

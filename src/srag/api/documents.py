@@ -30,7 +30,7 @@ from srag.contracts.identity import UserIdentity
 from srag.db.audit import record_audit
 from srag.db.models import Document, EvidenceUnitModel
 from srag.ingestion.embedder import get_embedder
-from srag.ingestion.ingest_service import IngestService, UnsupportedDocumentType
+from srag.ingestion.ingest_service import IngestService, UnsupportedDocumentTypeError
 from srag.ingestion.jobs import IngestJob, enqueue_redis, process_job
 from srag.retrieval.mapping import evidence_from_model
 from srag.settings import CacheBackend, get_settings
@@ -70,7 +70,11 @@ async def list_documents(
     session: Annotated[AsyncSession, Depends(get_secure_db_session)],
     user: Annotated[UserIdentity, Depends(get_current_user)],
 ) -> list[DocumentResponse]:
-    rows = (await session.execute(select(Document).order_by(Document.created_at.desc()))).scalars().all()
+    rows = (
+        (await session.execute(select(Document).order_by(Document.created_at.desc())))
+        .scalars()
+        .all()
+    )
     return [_document_response(doc) for doc in rows]
 
 
@@ -96,10 +100,14 @@ async def list_document_evidence(
     if doc is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     rows = (
-        await session.execute(
-            select(EvidenceUnitModel).where(EvidenceUnitModel.document_id == document_id)
+        (
+            await session.execute(
+                select(EvidenceUnitModel).where(EvidenceUnitModel.document_id == document_id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [inspect_evidence(evidence_from_model(row)) for row in rows]
 
 
@@ -113,14 +121,20 @@ async def list_document_pages(
     if doc is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     rows = (
-        await session.execute(
-            select(EvidenceUnitModel).where(EvidenceUnitModel.document_id == document_id)
+        (
+            await session.execute(
+                select(EvidenceUnitModel).where(EvidenceUnitModel.document_id == document_id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     grouped: dict[str, list[EvidenceUnitModel]] = {}
     for row in rows:
         loc = row.source_location or {}
-        page_id = row.page_id or (str(loc["page_number"]) if loc.get("page_number") is not None else "unknown")
+        page_id = row.page_id or (
+            str(loc["page_number"]) if loc.get("page_number") is not None else "unknown"
+        )
         grouped.setdefault(page_id, []).append(row)
     pages: list[PageMetadata] = []
     for page_id, units in grouped.items():
@@ -191,7 +205,7 @@ async def upload_document(
         )
     except UnicodeDecodeError as exc:
         raise HTTPException(status_code=400, detail="Text files must be valid UTF-8") from exc
-    except UnsupportedDocumentType as exc:
+    except UnsupportedDocumentTypeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

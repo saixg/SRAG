@@ -37,7 +37,10 @@ async def test_multimodal_retrieval_phase2b(rls_session):
                     text_content="The revenue reported in Q3 was $5M.",
                     embedding=[0.1] * 1024,
                     source_location={"page_number": 1, "coordinate_system": "docling"},
-                    provenance={"source_filename": "financial_statement.pdf", "extraction_method": "docling"},
+                    provenance={
+                        "source_filename": "financial_statement.pdf",
+                        "extraction_method": "docling",
+                    },
                 ),
                 EvidenceUnitModel(
                     tenant_id=tenant_id,
@@ -47,8 +50,15 @@ async def test_multimodal_retrieval_phase2b(rls_session):
                     text_content="Table: Q3 revenue by department.",
                     structured_content={"raw": "table data"},
                     embedding=[0.1] * 1024,
-                    source_location={"page_number": 2, "bbox": [10.0, 20.0, 100.0, 50.0], "coordinate_system": "docling"},
-                    provenance={"source_filename": "financial_statement.pdf", "extraction_method": "docling"},
+                    source_location={
+                        "page_number": 2,
+                        "bbox": [10.0, 20.0, 100.0, 50.0],
+                        "coordinate_system": "docling",
+                    },
+                    provenance={
+                        "source_filename": "financial_statement.pdf",
+                        "extraction_method": "docling",
+                    },
                 ),
                 EvidenceUnitModel(
                     tenant_id=tenant_id,
@@ -56,8 +66,15 @@ async def test_multimodal_retrieval_phase2b(rls_session):
                     element_type=EvidenceType.OCR.value,
                     text_content="Scanned revenue report showing $5M.",
                     embedding=[0.1] * 1024,
-                    source_location={"page_number": 3, "bbox": [5.0, 5.0, 200.0, 100.0], "coordinate_system": "pixel"},
-                    provenance={"source_filename": "financial_statement.pdf", "extraction_method": "paddleocr"},
+                    source_location={
+                        "page_number": 3,
+                        "bbox": [5.0, 5.0, 200.0, 100.0],
+                        "coordinate_system": "pixel",
+                    },
+                    provenance={
+                        "source_filename": "financial_statement.pdf",
+                        "extraction_method": "paddleocr",
+                    },
                 ),
                 EvidenceUnitModel(
                     tenant_id=tenant_id,
@@ -66,8 +83,15 @@ async def test_multimodal_retrieval_phase2b(rls_session):
                     text_content="revenue graph",
                     visual_reference_id="img_001",
                     embedding=None,
-                    source_location={"page_number": 4, "bbox": [50.0, 50.0, 300.0, 300.0], "coordinate_system": "docling"},
-                    provenance={"source_filename": "financial_statement.pdf", "extraction_method": "docling"},
+                    source_location={
+                        "page_number": 4,
+                        "bbox": [50.0, 50.0, 300.0, 300.0],
+                        "coordinate_system": "docling",
+                    },
+                    provenance={
+                        "source_filename": "financial_statement.pdf",
+                        "extraction_method": "docling",
+                    },
                 ),
             ]
         )

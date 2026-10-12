@@ -64,7 +64,9 @@ class Settings(BaseSettings):
     groq_api_key: SecretStr | None = None
     groq_model: str = "openai/gpt-oss-120b"
 
-    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str = (
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173"
+    )
 
     server_host: str = "0.0.0.0"
     server_port: int = 8000
