@@ -26,10 +26,10 @@ if config.config_file_name is not None:
 settings = get_settings()
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
-# Target metadata for autogenerate support (added in later phases)
-target_metadata = None
+from srag.db.models import Base
 
-
+# Target metadata for autogenerate support
+target_metadata = Base.metadata
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode — generates SQL without connecting."""
     url = config.get_main_option("sqlalchemy.url")
