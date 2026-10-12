@@ -1,115 +1,810 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+/* Self-hosted Geist. No <link> or @import to fonts.googleapis.com: a remote
+   @import blocks CSS parse, and these woff2 files get hashed and bundled. */
+@import '@fontsource/geist-sans/latin-400.css';
+@import '@fontsource/geist-sans/latin-500.css';
+@import '@fontsource/geist-sans/latin-600.css';
+@import '@fontsource/geist-sans/latin-700.css';
+@import '@fontsource/geist-mono/latin-400.css';
+@import '@fontsource/geist-mono/latin-500.css';
 @import 'tailwindcss';
 
+/*
+  SecureRAG design system.
+
+  Reconciled from three sources (conflicts documented in the engineering report):
+
+  1. Product requirements (prd.MD, securedRAG.md) - the information architecture:
+     a workspace shell with Ask / Evidence / Security / Audit as first-class surfaces.
+  2. design/ folder - adopted as the *geometry and type system*: 4px spacing base,
+     exactly two radii (8px / 12px), zero elevation (hairline borders carry separation,
+     never shadows), outlined-first buttons, flat fills with no gradients, and the
+     dual-register type treatment (tight negative tracking on display sizes, wide
+     positive tracking on 11-13px micro-labels).
+  3. Reference screenshots - adopted as the *palette and shell layout*. The design/
+     folder's own palette (lime #aaff00 on paper white, pastel category washes) and
+     layout (1200px centered marketing page, no sidebar) belong to a different product,
+     a mockup marketplace, and cannot express a permission-scoped workspace app.
+
+  Type: Geist for UI, Geist Mono for every machine value (ids, tenant slugs, bbox
+  coordinates, scores, timestamps, counts). The mono register is what makes a
+  retrieval tool read as an instrument rather than a form.
+
+  Theme: light and dark are both first-class. Dark is defined twice on purpose,
+  once behind prefers-color-scheme for the system default and once behind
+  [data-theme] so an explicit choice wins in either direction.
+*/
+
 :root {
-  --color-paper-white: #ffffff;
-  --color-charcoal: #1f2025;
-  --color-ink: #222326;
-  --color-cloud-card: #ebf0f8;
-  --color-body-gray: #747679;
-  --color-signal-gold: #ffca00;
-  --color-coral-signal: #ffab94;
-  --color-recovery-green: #31ce01;
-  --color-metric-blue: #415eee;
-  --color-sleep-lilac: #b9a6ff;
-  --color-hero-sky: #d2e5ff;
-  --gradient-hero-sky: linear-gradient(#d2e5ff, #fff9ee);
+  color-scheme: light;
 
-  --font-sans: -apple-system, BlinkMacSystemFont, Inter, 'Segoe UI', sans-serif;
+  /* ---- Surfaces ---------------------------------------------------------- */
+  --surface-canvas: #f6f7f9;      /* app background behind cards */
+  --surface-raised: #ffffff;      /* cards, top bar, panels */
+  --surface-sunken: #f1f3f6;      /* inset wells, hover rows */
+  --surface-nav: #0e1a2b;         /* sidebar */
+  --surface-nav-raised: #1a2740;  /* sidebar active / hover */
+
+  /* ---- Ink --------------------------------------------------------------- */
+  --ink-strong: #0f1724;          /* headings */
+  --ink: #1f2937;                 /* body */
+  --ink-muted: #5b6472;           /* secondary text */
+  --ink-subtle: #636c7a;          /* tertiary, placeholder (AA on sunken) */
+  --ink-on-nav: #e8edf5;          /* sidebar text */
+  --ink-on-nav-muted: #9fb2cc;    /* sidebar secondary (AA on nav) */
+  --ink-on-nav-active: #ffffff;   /* the nav is dark in both themes */
+  --ink-inverse: #ffffff;
+
+  /* ---- Accent & status --------------------------------------------------- */
+  --accent: #3b5bf6;              /* primary action, active nav, focus */
+  --accent-hover: #2f4ae0;
+  --accent-active: #2439b8;
+  --accent-soft: #eef2ff;         /* accent-tinted surface */
+  --accent-soft-hover: #e2e8ff;
+  --accent-ink: #3449b5;          /* accent text on light (AA on accent-soft) */
+  --status-ok: #147634;
+  --status-ok-soft: #e7f6ec;
+  --status-warn: #92400e;
+  --status-warn-soft: #fef3c7;
+  --status-danger: #b42318;
+  --status-danger-soft: #fee4e2;
+
+  /* ---- Borders ----------------------------------------------------------- */
+  --border: #e4e7ec;              /* hairline, the only separation device */
+  --border-strong: #cfd4dc;
+  --border-input: #8b94a3;        /* 3:1 vs raised, per WCAG 1.4.11 */
+  --border-nav: #22304a;
+
+  /* Derived surfaces that can't be expressed as a flat token above. */
+  --surface-nav-hover: rgba(255, 255, 255, 0.08);
+  --surface-nav-inset: rgba(255, 255, 255, 0.04);
+  --surface-scrim: rgba(15, 23, 36, 0.4);
+  --surface-shimmer: #e9ecf1;
+  --accent-tint: rgba(59, 91, 246, 0.12);
+
+  /* ---- Typography -------------------------------------------------------- */
+  --font-sans: 'Geist Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Mono', monospace;
+
+  /* dual register: micro-labels track wide, display tracks tight */
+  --text-micro: 11px;
+  --tracking-micro: 0.045em;
   --text-caption: 12px;
-  --leading-caption: 1.1;
-  --text-nav: 16px;
-  --leading-nav: 1.4;
-  --text-brand-nav: 18px;
-  --leading-brand-nav: 1.4;
-  --tracking-brand-nav: 0.162px;
-  --text-body: 24px;
-  --leading-body: 1.3;
-  --text-section-label: 24px;
-  --leading-section-label: 0.9;
-  --tracking-section-label: -0.24px;
-  --text-card-heading: 40px;
-  --leading-card-heading: 1;
-  --tracking-card-heading: -1.2px;
-  --text-display: 64px;
-  --leading-display: 1;
-  --tracking-display: -1.92px;
-  --text-hero-display: 80px;
-  --leading-hero-display: 1;
-  --tracking-hero-display: -2.4px;
-  --font-weight-regular: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
+  --tracking-caption: 0.01em;
+  --text-sm: 13px;
+  --text-body: 14px;
+  --text-base: 16px;
+  --text-lg: 19px;
+  --tracking-lg: -0.011em;
+  --text-xl: 24px;
+  --tracking-xl: -0.018em;
+  --text-display: 34px;
+  --tracking-display: -0.025em;
 
-  --spacing-unit: 8px;
-  --spacing-8: 8px;
-  --spacing-16: 16px;
-  --spacing-24: 24px;
-  --spacing-32: 32px;
-  --spacing-40: 40px;
-  --spacing-48: 48px;
-  --spacing-80: 80px;
-  --spacing-96: 96px;
-  --spacing-160: 160px;
-  --section-gap: 80px;
-  --card-padding: 32px;
-  --element-gap: 16px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
 
-  --radius-images: 16px;
-  --radius-cards: 24px;
-  --radius-navigation: 32px;
-  --radius-buttons: 128px;
-  --radius-pills: 9999px;
+  /* ---- Spacing (4px base) ------------------------------------------------ */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
 
-  --shadow-md: rgba(0, 0, 0, 0.25) 0px 0px 16px -8px;
-  --shadow-md-2: rgba(0, 0, 0, 0.15) 0px 2px 16px 0px;
-  --copilot-width: 420px;
+  /* ---- Radii (exactly two, per the design system) ------------------------ */
+  --radius-xs: 6px;   /* chips nested inside an 8px container */
+  --radius-sm: 8px;   /* buttons, badges, nav items, inputs */
+  --radius-md: 12px;  /* cards, icon tiles, panels */
+
+  /* ---- Motion ------------------------------------------------------------ */
+  /* One easing curve for the whole app. Durations stay short because this is a
+     working tool: motion acknowledges an action, it does not perform. */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --dur-slow: 260ms;
+
+  /* ---- Layout ------------------------------------------------------------ */
+  --sidebar-width: 256px;
+  --topbar-height: 64px;
+  --rail-width: 340px;
+  --content-max: 1400px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --surface-canvas: #0b1119;
+    --surface-raised: #141d2a;
+    --surface-sunken: #0f1722;
+    --surface-nav: #0d1522;
+    --surface-nav-raised: #1c2941;
+
+    --ink-strong: #eef2f8;
+    --ink: #d3dae4;
+    --ink-muted: #9aa7b8;
+    --ink-subtle: #7d8899;
+    --ink-on-nav: #e8edf5;
+    --ink-on-nav-muted: #9fb2cc;
+    --ink-on-nav-active: #ffffff;
+    --ink-inverse: #0b1119;
+
+    --accent: #6d85ff;
+    --accent-hover: #8699ff;
+    --accent-active: #667dfa;
+    --accent-soft: #1a2342;
+    --accent-soft-hover: #212c52;
+    --accent-ink: #b3c0ff;
+    --status-ok: #4ade80;
+    --status-ok-soft: #10261a;
+    --status-warn: #fbbf24;
+    --status-warn-soft: #2b2008;
+    --status-danger: #fca5a5;
+    --status-danger-soft: #2e1413;
+
+    --border: #1f2a3a;
+    --border-strong: #2f3d52;
+    --border-input: #5f7290;
+    --border-nav: #1f2c42;
+
+    --surface-scrim: rgba(3, 7, 12, 0.66);
+    --surface-shimmer: #1b2533;
+    --accent-tint: rgba(109, 133, 255, 0.16);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface-canvas: #0b1119;
+  --surface-raised: #141d2a;
+  --surface-sunken: #0f1722;
+  --surface-nav: #0d1522;
+  --surface-nav-raised: #1c2941;
+
+  --ink-strong: #eef2f8;
+  --ink: #d3dae4;
+  --ink-muted: #9aa7b8;
+  --ink-subtle: #7d8899;
+  --ink-on-nav: #e8edf5;
+  --ink-on-nav-muted: #9fb2cc;
+  --ink-on-nav-active: #ffffff;
+  --ink-inverse: #0b1119;
+
+  --accent: #6d85ff;
+  --accent-hover: #8699ff;
+  --accent-active: #667dfa;
+  --accent-soft: #1a2342;
+  --accent-soft-hover: #212c52;
+  --accent-ink: #b3c0ff;
+  --status-ok: #4ade80;
+  --status-ok-soft: #10261a;
+  --status-warn: #fbbf24;
+  --status-warn-soft: #2b2008;
+  --status-danger: #fca5a5;
+  --status-danger-soft: #2e1413;
+
+  --border: #1f2a3a;
+  --border-strong: #2f3d52;
+  --border-input: #5f7290;
+  --border-nav: #1f2c42;
+
+  --surface-scrim: rgba(3, 7, 12, 0.66);
+  --surface-shimmer: #1b2533;
+  --accent-tint: rgba(109, 133, 255, 0.16);
 }
 
 @theme inline {
-  --color-paper-white: var(--color-paper-white);
-  --color-charcoal: var(--color-charcoal);
-  --color-ink: var(--color-ink);
-  --color-cloud-card: var(--color-cloud-card);
-  --color-body-gray: var(--color-body-gray);
-  --color-signal-gold: var(--color-signal-gold);
-  --color-coral-signal: var(--color-coral-signal);
-  --color-recovery-green: var(--color-recovery-green);
-  --color-metric-blue: var(--color-metric-blue);
-  --color-sleep-lilac: var(--color-sleep-lilac);
+  --color-canvas: var(--surface-canvas);
+  --color-raised: var(--surface-raised);
+  --color-nav: var(--surface-nav);
+  --color-accent: var(--accent);
+  --color-ink: var(--ink);
   --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
 * { box-sizing: border-box; }
 
-html, body, #root {
-  min-height: 100%;
-}
+html, body, #root { min-height: 100%; }
 
 body {
   margin: 0;
-  background: var(--color-paper-white);
-  color: var(--color-ink);
+  background: var(--surface-canvas);
+  color: var(--ink);
   font-family: var(--font-sans);
-  font-size: var(--text-nav);
-  font-weight: var(--font-weight-regular);
+  font-size: var(--text-body);
+  font-weight: var(--weight-regular);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-button, input, textarea {
-  font-family: inherit;
-}
-
+button, input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
 a { color: inherit; text-decoration: none; }
+h1, h2, h3, h4 { margin: 0; color: var(--ink-strong); font-weight: var(--weight-semibold); }
+p { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
 
 :focus-visible {
-  outline: 2px solid var(--color-metric-blue);
-  outline-offset: 3px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Machine values: ids, slugs, coordinates, scores, counts, timestamps.
+   Tabular figures so columns of numbers line up vertically. */
+.srag-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.012em;
+}
+
+/* Scrollbars stay quiet so they don't compete with the hairline system. */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 9999px; border: 3px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: var(--ink-subtle); background-clip: content-box; }
+
+@keyframes srag-spin { to { transform: rotate(360deg); } }
+@keyframes srag-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes srag-reveal { from { opacity: 0; transform: translateY(8px); } }
+@keyframes srag-fade { from { opacity: 0; } }
+@keyframes srag-slide-in { from { opacity: 0; transform: translateX(16px); } }
+@keyframes srag-slide-in-left { from { opacity: 0; transform: translateX(-16px); } }
+
+/* Entry motion. `both` fill keeps the element invisible through its delay
+   instead of flashing in and then animating. */
+.srag-reveal {
+  animation: srag-reveal var(--dur-slow) var(--ease) both;
+  animation-delay: calc(var(--srag-i, 0) * 45ms);
+}
+.srag-fade { animation: srag-fade var(--dur) var(--ease) both; }
+.srag-slide-in { animation: srag-slide-in var(--dur-slow) var(--ease) both; }
+/* The nav drawer is anchored left, so it owes the mirrored direction. */
+.srag-drawer-nav.srag-slide-in { animation-name: srag-slide-in-left; }
+
+.srag-spin { animation: srag-spin 700ms linear infinite; }
+.srag-shimmer {
+  background: linear-gradient(90deg, var(--surface-sunken) 25%, var(--surface-shimmer) 50%, var(--surface-sunken) 75%);
+  background-size: 200% 100%;
+  animation: srag-shimmer 1.3s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
+  /* Zeroing the duration alone is not enough: a staggered delay would still
+     hold each element at `opacity: 0` for its share of the stagger, so the
+     list would appear one item at a time with no animation to explain it. */
+  .srag-reveal, .srag-fade, .srag-slide-in { animation-delay: 0ms !important; }
+  /* A spinner with no spin still reads as a ring. A shimmer with no shimmer
+     reads as a stray gradient, so flatten it instead. */
+  .srag-shimmer { background: var(--surface-sunken); }
+}
+
+/* ---- Button -------------------------------------------------------------- */
+/* Buttons live in CSS rather than inline styles because hover, active,
+   focus-visible and disabled cannot be expressed as a style object. */
+
+.srag-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font: inherit;
+  font-weight: var(--weight-medium);
+  line-height: 1.2;
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+/* Tactile depress. Transform only, so it stays on the GPU. */
+.srag-btn:active:not(:disabled) { transform: translateY(1px) scale(0.985); }
+
+.srag-btn:disabled { cursor: not-allowed; opacity: 0.55; }
+.srag-btn[aria-busy='true'] { cursor: progress; }
+
+.srag-btn--sm { padding: 6px 10px; font-size: var(--text-sm); gap: 6px; }
+.srag-btn--md { padding: 9px 14px; font-size: var(--text-body); }
+.srag-btn--lg { padding: 12px 18px; font-size: var(--text-base); }
+
+.srag-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-inverse);
+}
+.srag-btn--primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.srag-btn--primary:active:not(:disabled) { background: var(--accent-active); border-color: var(--accent-active); }
+
+.srag-btn--outline {
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+  color: var(--ink-strong);
+}
+.srag-btn--outline:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+
+.srag-btn--subtle {
+  background: var(--surface-sunken);
+  color: var(--ink-strong);
+}
+.srag-btn--subtle:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent-ink); }
+
+.srag-btn--ghost {
+  background: transparent;
+  color: var(--ink-muted);
+}
+.srag-btn--ghost:hover:not(:disabled) { background: var(--surface-sunken); color: var(--ink-strong); }
+
+.srag-btn--danger {
+  background: var(--surface-raised);
+  border-color: var(--status-danger-soft);
+  color: var(--status-danger);
+}
+.srag-btn--danger:hover:not(:disabled) { background: var(--status-danger-soft); border-color: var(--status-danger); }
+
+/* Filter chip. Evidence and Audit both had their own inline copy of this with
+   no hover, active or focus state, since a style object cannot express them. */
+.srag-chip {
+  padding: 6px 14px;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--ink-strong);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.srag-chip:hover:not([aria-pressed='true']) { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+.srag-chip:active { transform: translateY(1px); }
+.srag-chip[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-inverse);
+}
+
+/* Composer submit. Square by design, so it needs its own floor on touch. */
+.srag-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--ink-subtle);
+  cursor: not-allowed;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.srag-send--ready {
+  background: var(--accent);
+  color: var(--ink-inverse);
+  cursor: pointer;
+}
+.srag-send--ready:hover { background: var(--accent-hover); }
+.srag-send--ready:active { transform: translateY(1px) scale(0.96); }
+
+/* A dashed "add" affordance: an outline button that reads as a drop slot. */
+.srag-dashed-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+.srag-dashed-action:hover {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+}
+
+/* ---- Input --------------------------------------------------------------- */
+
+.srag-input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-input);
+  background: var(--surface-raised);
+  color: var(--ink-strong);
+  outline-offset: 2px;
+  transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+.srag-input::placeholder { color: var(--ink-subtle); opacity: 1; }
+.srag-input:hover:not(:disabled) { border-color: var(--ink-subtle); }
+.srag-input:focus-visible { border-color: var(--accent); }
+.srag-input:disabled { cursor: not-allowed; opacity: 0.6; background: var(--surface-sunken); }
+
+/* Top-bar search: an input that reads as a well rather than a field, because it
+   sits inside chrome and not inside a form. */
+.srag-search {
+  width: 100%;
+  padding: 9px 64px 9px 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: var(--surface-sunken);
+  color: var(--ink-strong);
+  transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+.srag-search::placeholder { color: var(--ink-subtle); opacity: 1; }
+.srag-search:hover { border-color: var(--border-strong); }
+.srag-search:focus-visible { border-color: var(--accent); background: var(--surface-raised); }
+
+.srag-kbd {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 3px 7px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+}
+
+/* ---- Trust trace --------------------------------------------------------- */
+/* The six pipeline stages the backend streams over SSE. Each stage flips from
+   pending to complete when its event lands, and the transition is the point:
+   it shows the reader that authorization really resolved before generation,
+   rather than presenting six boxes that were always green. */
+
+.srag-trace-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-medium);
+  background: var(--surface-sunken);
+  color: var(--ink-subtle);
+  transition: background var(--dur-slow) var(--ease), color var(--dur-slow) var(--ease);
+}
+.srag-trace-step--current { background: var(--accent-soft); color: var(--accent-ink); }
+.srag-trace-step--done { background: var(--status-ok-soft); color: var(--status-ok); }
+
+/* ---- Icon button --------------------------------------------------------- */
+/* Square chrome control. 36px is below the 44px pointer target, so the hit area
+   is padded out on touch where there is no hover to compensate. */
+
+.srag-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.srag-icon-btn:hover:not(:disabled) {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  color: var(--ink-strong);
+}
+.srag-icon-btn:active:not(:disabled) { transform: translateY(1px); }
+.srag-icon-btn:disabled { cursor: not-allowed; color: var(--ink-subtle); opacity: 0.6; }
+
+@media (pointer: coarse) {
+  .srag-icon-btn { padding: 12px; }
+}
+
+/* Pointer targets on touch. A mouse gets a hover state to aim with; a finger
+   does not, so every control grows to the 44px minimum. */
+@media (pointer: coarse) {
+  .srag-btn,
+  .srag-input,
+  .srag-search,
+  .srag-icon-btn,
+  .srag-dashed-action,
+  .srag-citation,
+  .srag-starter,
+  .srag-chip,
+  select { min-height: 44px; }
+
+  .srag-send { width: 44px; height: 44px; }
+
+  /* Inline text actions ("Manage", "View all", "Details") measured 20px tall.
+     The padding is negative-margined back out so the layout does not shift. */
+  .srag-text-action {
+    padding: 12px 8px;
+    margin: -12px -8px;
+  }
+}
+
+/* ---- Layout primitives --------------------------------------------------- */
+
+.srag-page {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-8) var(--space-12);
+  container-type: inline-size;
+}
+
+/* The content column beside a rail. Queries resolve against the nearest
+   container, so this one answers for the grids inside it. */
+.srag-col { container-type: inline-size; }
+
+/* Home: content column + right rail. */
+.srag-page--with-rail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rail-width);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.srag-rail {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  position: sticky;
+  top: var(--space-8);
+}
+
+/*
+  Grids state their natural column count and let a container query decide
+  whether there is room for it.
+
+  `repeat(auto-fit, minmax(X, 1fr))` was wrong here: it fits as many columns as
+  the width allows with no regard for how many items there are, so 3 cards in a
+  2-column fit left one orphaned on its own row, 4 cards in a 3-column fit did
+  the same, and a 2-card row wide enough for 3 produced a phantom 0px track.
+  The container is the content column, which is narrower than the page whenever
+  the right rail is present, so a page-level media query cannot answer this.
+*/
+
+.srag-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+@container (min-width: 680px) {
+  .srag-two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.srag-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+@container (min-width: 760px) {
+  .srag-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.srag-stat-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--dur) var(--ease);
+}
+.srag-stat-card:hover { border-color: var(--border-strong); }
+
+.srag-quick-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+@container (min-width: 760px) {
+  .srag-quick-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.srag-quick-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  text-align: left;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.srag-quick-card:hover { border-color: var(--accent); background: var(--accent-soft); }
+.srag-quick-card:active { transform: translateY(1px); }
+
+.srag-starter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.srag-starter:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+.srag-evidence-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.srag-evidence-row:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+.srag-citation {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  padding: 5px 10px 5px 5px;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--ink-strong);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.srag-citation:hover { border-color: var(--accent); background: var(--accent-soft); }
+.srag-citation:active { transform: translateY(1px); }
+.srag-citation__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  flex-shrink: 0;
+  border-radius: var(--radius-xs);
+  background: var(--accent);
+  color: var(--ink-inverse);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+}
+
+/* Chat page owns the viewport: scroll lives in the transcript, not the page. */
+.srag-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.srag-chat__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4) var(--space-8);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border);
+}
+.srag-chat__scroll { flex: 1; overflow-y: auto; }
+.srag-chat__inner {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+.srag-chat__composer {
+  flex-shrink: 0;
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  background: var(--surface-canvas);
+  border-top: 1px solid var(--border);
+}
+
+/* ---- Responsive ---------------------------------------------------------- */
+/* 375px is the narrowest target, so the smallest breakpoint has to cover it
+   rather than bottoming out at 680px. */
+
+@media (max-width: 1180px) {
+  .srag-page--with-rail { grid-template-columns: minmax(0, 1fr); }
+  .srag-rail { position: static; }
+}
+
+@media (max-width: 900px) {
+  .srag-sidebar { display: none; }
+  .srag-nav-toggle { display: inline-flex !important; }
+  .srag-page { padding: var(--space-5) var(--space-4) var(--space-10); }
+  .srag-chat__head { padding: var(--space-4); }
+  .srag-chat__inner { padding: 0 var(--space-4); }
+  .srag-chat__composer { padding: var(--space-3) var(--space-4) var(--space-4); }
+}
+
+@media (max-width: 680px) {
+  .srag-hide-sm { display: none; }
+}
+
+@media (max-width: 420px) {
+  .srag-page { padding: var(--space-4) var(--space-3) var(--space-8); }
+  .srag-chat__inner { padding: 0 var(--space-3); }
+  .srag-chat__composer { padding: var(--space-3); }
+  .srag-chat__head { padding: var(--space-3); }
+  /* A 256px drawer on a 375px screen leaves a 119px scrim. Give it more. */
+  .srag-drawer-nav { width: 86vw !important; max-width: 300px; }
+  .srag-citation { max-width: 100%; }
+}
+
+/* Utility used by skip-link and screen-reader-only labels. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link:focus {
+  position: fixed;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 100;
+  width: auto; height: auto;
+  clip: auto;
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-weight: var(--weight-medium);
 }

@@ -37,6 +37,37 @@ export async function fetchMe(token) {
   return response.json()
 }
 
+/** Liveness + DB ping. Unauthenticated. Returns null when the API is unreachable. */
+export async function fetchHealth() {
+  try {
+    const response = await fetch(`${API}/api/v1/health`)
+    if (!response.ok) return { status: 'degraded' }
+    return await response.json()
+  } catch {
+    return null
+  }
+}
+
+export async function fetchDocumentEvidence(token, documentId) {
+  const response = await fetch(`${API}/api/v1/documents/${documentId}/evidence`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) throw new Error('Evidence is unavailable for this document')
+  return response.json()
+}
+
+export async function fetchEvidenceList(token, { documentId, elementType, limit = 50 } = {}) {
+  const params = new URLSearchParams()
+  if (documentId) params.set('document_id', documentId)
+  if (elementType) params.set('element_type', elementType)
+  if (limit) params.set('limit', String(limit))
+  const response = await fetch(`${API}/api/v1/evidence?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) throw new Error('Evidence is unavailable')
+  return response.json()
+}
+
 export async function fetchWorkspace(token) {
   const response = await fetch(`${API}/api/v1/workspace`, {
     headers: { Authorization: `Bearer ${token}` },

@@ -13,6 +13,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import Response
 from starlette.types import Message, Receive, Scope, Send
 
 from srag.api.audit import router as audit_router
@@ -158,15 +160,35 @@ def create_app() -> FastAPI:
     app.include_router(metrics_router, prefix="/api/v1")
 
     if SPA_DIST.is_dir():
-        app.mount("/", StaticFiles(directory=SPA_DIST, html=True), name="spa")
+        app.mount("/", SPAStaticFiles(directory=SPA_DIST, html=True), name="spa")
     else:
 
         @app.get("/")
         async def index() -> dict[str, str]:
             return {
-                "service": "bevel",
+                "service": "srag",
                 "health": "/api/v1/health",
                 "docs": "/docs",
             }
 
     return app
+
+
+class SPAStaticFiles(StaticFiles):
+    """Static files with a client-side-routing fallback.
+
+    The frontend uses history-based routing, so a hard load or refresh of
+    /knowledge asks the server for a file that does not exist. Serving
+    index.html for those lets the router resolve the path. Only unmatched
+    non-API GETs reach here — API routes are registered before this mount, and
+    a missing asset (anything with a file extension) still 404s rather than
+    silently returning HTML.
+    """
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code == 404 and "." not in Path(path).name:
+                return await super().get_response("index.html", scope)
+            raise
