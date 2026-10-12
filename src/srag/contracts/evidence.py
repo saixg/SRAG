@@ -35,7 +35,8 @@ class SourceLocation(BaseModel):
     """Where in the source document this evidence was extracted from."""
 
     page_number: int | None = None
-    bbox: list[float] | None = None  # [x0, y0, x1, y1] normalized coordinates
+    bbox: list[float] | None = None  # [x0, y0, x1, y1] normalized or absolute coordinates
+    coordinate_system: str | None = None  # e.g., "normalized", "pixel"
     section: str | None = None
 
 

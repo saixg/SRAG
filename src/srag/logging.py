@@ -7,12 +7,15 @@ import logging
 import structlog
 
 
-def setup_logging(log_level: str = "INFO") -> None:
+def setup_logging(log_level: str = "INFO", json_logs: bool = False) -> None:
     """Configure structured logging for the application.
 
     Uses structlog processors for structured JSON output in production
     and human-readable console output in development.
     """
+    renderer: structlog.types.Processor = (
+        structlog.processors.JSONRenderer() if json_logs else structlog.dev.ConsoleRenderer()
+    )
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
@@ -24,7 +27,7 @@ def setup_logging(log_level: str = "INFO") -> None:
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
-            structlog.dev.ConsoleRenderer(),
+            renderer,
         ],
         wrapper_class=structlog.stdlib.BoundLogger,
         context_class=dict,

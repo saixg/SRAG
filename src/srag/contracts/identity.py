@@ -35,9 +35,15 @@ class UserIdentity(BaseModel):
     tenant: TenantContext
     email: str | None = None
     roles: list[str] = Field(default_factory=list)
+    collections: list[str] = Field(default_factory=list)
     authenticated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def tenant_id(self) -> uuid.UUID:
         """Convenience accessor for the tenant isolation key."""
         return self.tenant.tenant_id
+
+    @property
+    def tenant_context(self) -> TenantContext:
+        """Alias used by ingestion and older call sites."""
+        return self.tenant
