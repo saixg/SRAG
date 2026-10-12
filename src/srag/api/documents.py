@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID, uuid4
 
 from fastapi import (
@@ -13,13 +13,14 @@ from fastapi import (
     BackgroundTasks,
     Depends,
     File,
+    Form,
     HTTPException,
     Response,
     UploadFile,
     status,
 )
-from pydantic import BaseModel
-from sqlalchemy import select
+from pydantic import BaseModel, ValidationError
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from srag.api.auth import get_current_user
@@ -27,6 +28,7 @@ from srag.api.dependencies import get_secure_db_session
 from srag.api.limits import get_limiter
 from srag.contracts.citation import CitationInspect, inspect_evidence
 from srag.contracts.identity import UserIdentity
+from srag.contracts.scope import SecurityScope
 from srag.db.audit import record_audit
 from srag.db.models import Document, EvidenceUnitModel
 from srag.ingestion.embedder import get_embedder
@@ -45,6 +47,28 @@ def get_ingest_service() -> IngestService:
     return IngestService(embedder=get_embedder())
 
 
+def _parse_scope(raw: str | None) -> SecurityScope:
+    """Parse the multipart security_scope field, rejecting anything malformed.
+
+    A silently ignored ACL would publish a restricted document to the whole
+    tenant, so a bad value is a 422 rather than an open scope.
+    """
+    if raw is None or not raw.strip():
+        return SecurityScope()
+    try:
+        return SecurityScope.model_validate_json(raw)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid security_scope: {exc.error_count()} error(s)",
+        ) from exc
+
+
+def _require_admin(user: UserIdentity) -> None:
+    if not any(role.casefold() == "admin" for role in user.roles):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required")
+
+
 class DocumentResponse(BaseModel):
     id: UUID
     filename: str
@@ -52,6 +76,10 @@ class DocumentResponse(BaseModel):
     content_hash: str
     collection: str | None = None
     status: str = "ready"
+
+
+class ScopeAssign(BaseModel):
+    security_scope: SecurityScope = SecurityScope()
 
 
 class PageMetadata(BaseModel):
@@ -175,16 +203,61 @@ async def assign_collection(
     return _document_response(doc)
 
 
+@router.put("/{document_id}/scope", response_model=DocumentResponse)
+async def assign_scope(
+    document_id: UUID,
+    body: ScopeAssign,
+    session: Annotated[AsyncSession, Depends(get_secure_db_session)],
+    user: Annotated[UserIdentity, Depends(get_current_user)],
+) -> DocumentResponse:
+    """Set the document ACL and stamp it onto the evidence already ingested.
+
+    Evidence carries its own security_scope because retrieval authorizes units,
+    not documents, so a change here has to be pushed down to the existing rows.
+    """
+    _require_admin(user)
+    doc = await session.get(Document, document_id)
+    if doc is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    scope = body.security_scope
+    metadata = dict(doc.metadata_ or {})
+    if scope.is_open:
+        metadata.pop("acl", None)
+    else:
+        metadata["acl"] = scope.as_dict()
+    doc.metadata_ = metadata
+
+    # RLS confines this to the caller tenant, so document_id alone is enough.
+    await session.execute(
+        update(EvidenceUnitModel)
+        .where(EvidenceUnitModel.document_id == document_id)
+        .values(security_scope=scope.as_dict())
+    )
+    await session.flush()
+    await record_audit(
+        session,
+        user,
+        "document.scope",
+        resource_type="document",
+        resource_id=str(document_id),
+        details={"security_scope": scope.as_dict()},
+    )
+    return _document_response(doc)
+
+
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=DocumentResponse)
 async def upload_document(
     response: Response,
     background: BackgroundTasks,
     file: UploadFile = File(...),
+    security_scope: str | None = Form(None),
     session: AsyncSession = Depends(get_secure_db_session),
     user: UserIdentity = Depends(get_current_user),
     ingest: IngestService = Depends(get_ingest_service),
 ) -> DocumentResponse:
     settings = get_settings()
+    scope = _parse_scope(security_scope)
     get_limiter().check(f"upload:{user.user_id}", settings.rate_limit_upload_per_minute)
     if not file.filename:
         raise HTTPException(status_code=400, detail="Filename missing")
@@ -194,14 +267,16 @@ async def upload_document(
         raise HTTPException(status_code=413, detail="Upload exceeds the size limit")
     suffix = Path(filename).suffix.lower()
     if suffix in _MULTIMODAL_SUFFIXES:
-        return await _accept_async_ingest(response, background, session, user, filename, payload)
+        return await _accept_async_ingest(
+            response, background, session, user, filename, payload, scope
+        )
     try:
         doc = await ingest.ingest_bytes(
             session=session,
             tenant=user.tenant,
             filename=filename,
             payload=payload,
-            metadata={"uploaded_by": str(user.user_id)},
+            metadata=_upload_metadata(user, scope),
         )
     except UnicodeDecodeError as exc:
         raise HTTPException(status_code=400, detail="Text files must be valid UTF-8") from exc
@@ -218,7 +293,7 @@ async def upload_document(
         "document.ingest",
         resource_type="document",
         resource_id=str(doc.id),
-        details={"filename": filename},
+        details={"filename": filename, "security_scope": scope.as_dict()},
     )
     return _document_response(doc)
 
@@ -237,6 +312,13 @@ def _document_response(doc: Document) -> DocumentResponse:
     )
 
 
+def _upload_metadata(user: UserIdentity, scope: SecurityScope) -> dict[str, Any]:
+    metadata: dict[str, Any] = {"uploaded_by": str(user.user_id)}
+    if not scope.is_open:
+        metadata["acl"] = scope.as_dict()
+    return metadata
+
+
 async def _accept_async_ingest(
     response: Response,
     background: BackgroundTasks,
@@ -244,6 +326,7 @@ async def _accept_async_ingest(
     user: UserIdentity,
     filename: str,
     payload: bytes,
+    scope: SecurityScope,
 ) -> DocumentResponse:
     settings = get_settings()
     stored = Path(settings.ingest_upload_dir) / str(user.tenant_id) / f"{uuid4().hex}_{filename}"
@@ -254,8 +337,8 @@ async def _accept_async_ingest(
         filename=filename,
         content_hash=hashlib.sha256(payload).hexdigest(),
         metadata_={
+            **_upload_metadata(user, scope),
             "status": "processing",
-            "uploaded_by": str(user.user_id),
             "stored_path": str(stored),
         },
     )

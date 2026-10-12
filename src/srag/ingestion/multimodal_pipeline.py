@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from srag.contracts.evidence import EvidenceType
 from srag.contracts.identity import TenantContext
+from srag.contracts.scope import scope_from_metadata
 from srag.db.models import Document, EvidenceUnitModel
 from srag.ingestion.embedder import Embedder
 from srag.ingestion.parsers.docling_parser import extract_with_docling
@@ -59,6 +60,8 @@ class MultimodalPipeline:
             doc.content_hash = content_hash
             doc.filename = filename
 
+        scope = scope_from_metadata(doc.metadata_)
+
         candidates = _extract_candidates(file_path, filename, metadata or {})
         if not candidates:
             raise ValueError(f"No evidence extracted from {filename}")
@@ -82,7 +85,7 @@ class MultimodalPipeline:
                 visual_reference_id=candidate.get("visual_reference_id"),
                 source_location=loc or None,
                 provenance=candidate.get("provenance"),
-                security_scope=(doc.metadata_ or {}).get("acl") or {},
+                security_scope=scope,
             )
             image_bytes = candidate.get("image_bytes")
             if isinstance(image_bytes, (bytes, bytearray)) and unit.visual_reference_id:

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from srag.contracts.evidence import EvidenceType
 from srag.contracts.identity import TenantContext
+from srag.contracts.scope import scope_from_metadata
 from srag.db.models import Document, EvidenceUnitModel
 from srag.ingestion.embedder import Embedder
 from srag.ingestion.text_processor import TextProcessor
@@ -50,6 +51,8 @@ class IngestionPipeline:
         await session.flush()  # To get the doc.id
 
         # 2. Chunk text
+        scope = scope_from_metadata(doc.metadata_)
+
         chunks = self.processor.chunk_text(text_content)
         if not chunks:
             return doc
@@ -74,7 +77,7 @@ class IngestionPipeline:
                     "extraction_method": "text_recursive_character",
                     "chunk_index": i,
                 },
-                security_scope={},  # Base scope is just tenant_id, added above
+                security_scope=scope,
             )
             evidence_units.append(unit)
 
