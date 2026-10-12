@@ -4,9 +4,9 @@ from srag.ingestion.text_processor import TextProcessor
 
 __all__ = [
     "Embedder",
-    "LocalEmbedder",
     "HashingEmbedder",
-    "build_embedder",
-    "TextProcessor",
     "IngestionPipeline",
+    "LocalEmbedder",
+    "TextProcessor",
+    "build_embedder",
 ]

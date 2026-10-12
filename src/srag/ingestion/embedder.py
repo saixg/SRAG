@@ -3,8 +3,12 @@
 This module provides the embedding provider interface and two implementations:
 
 - LocalEmbedder: local sentence-transformers model (BGE-M3 baseline, 1024-dim).
-  The model is loaded lazily on first use so importing this module (or
-  starting the application) never triggers a model download.
+  Both the sentence-transformers import and the model load are deferred to
+  first use, so importing this module never pulls in torch and never
+  triggers a model download. That matters beyond startup cost: an
+  unimportable torch (a missing CUDA runtime, a DLL blocked by an OS
+  application-control policy) would otherwise break every module that
+  transitively imports this one, including unrelated tests.
 - HashingEmbedder: deterministic hashed embeddings for tests and offline
   development. Not semantically aware, but stable across processes.
 """
@@ -15,10 +19,23 @@ import math
 from functools import lru_cache
 from typing import Any
 
-try:
-    from sentence_transformers import SentenceTransformer
-except ImportError:
-    SentenceTransformer = None
+_UNAVAILABLE = (
+    "sentence-transformers could not be loaded; install it, or set "
+    "EMBEDDER_PROVIDER=hashing for offline development"
+)
+
+
+def _import_sentence_transformer() -> Any | None:
+    """Import SentenceTransformer, or return None if it is unusable.
+
+    OSError is caught alongside ImportError because the package can be
+    installed yet fail to load its native torch libraries.
+    """
+    try:
+        from sentence_transformers import SentenceTransformer
+    except (ImportError, OSError):
+        return None
+    return SentenceTransformer
 
 
 class Embedder(abc.ABC):
@@ -48,20 +65,20 @@ class LocalEmbedder(Embedder):
     def _load(self) -> Any:
         """Load the model lazily on first use."""
         if self._model is None:
-            if SentenceTransformer is None:
-                raise RuntimeError(
-                    "sentence-transformers is not installed; install it or "
-                    "set EMBEDDER_PROVIDER=hashing for offline development"
-                )
-            self._model = SentenceTransformer(self.model_name, **self.kwargs)
+            sentence_transformer = _import_sentence_transformer()
+            if sentence_transformer is None:
+                raise RuntimeError(_UNAVAILABLE)
+            self._model = sentence_transformer(self.model_name, **self.kwargs)
         return self._model
 
     def embed_text(self, text: str) -> list[float]:
-        return self._load().encode(text, normalize_embeddings=True).tolist()
+        vector: list[float] = self._load().encode(text, normalize_embeddings=True).tolist()
+        return vector
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         embeddings = self._load().encode(texts, normalize_embeddings=True)
-        return embeddings.tolist()
+        vectors: list[list[float]] = embeddings.tolist()
+        return vectors
 
 
 class HashingEmbedder(Embedder):
@@ -106,12 +123,10 @@ def build_embedder() -> Embedder:
         if settings.is_production:
             raise RuntimeError("EMBEDDER_PROVIDER=hashing is not allowed in production")
         return HashingEmbedder(dimension=settings.embedder_dimension)
-    if SentenceTransformer is None:
+    if _import_sentence_transformer() is None:
         if settings.is_production:
             raise RuntimeError("sentence-transformers is required when EMBEDDER_PROVIDER=local")
-        logging.getLogger(__name__).warning(
-            "sentence-transformers is not installed; using hashing embeddings"
-        )
+        logging.getLogger(__name__).warning("%s; using hashing embeddings", _UNAVAILABLE)
         return HashingEmbedder(dimension=settings.embedder_dimension)
     return LocalEmbedder(model_name=settings.embedder_model_name)
 

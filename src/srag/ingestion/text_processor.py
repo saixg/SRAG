@@ -2,19 +2,26 @@
 
 from __future__ import annotations
 
-try:
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
-except ImportError:
-    RecursiveCharacterTextSplitter = None
+from typing import Any
+
+
+def _import_splitter() -> Any | None:
+    """Import RecursiveCharacterTextSplitter, or None when unavailable."""
+    try:
+        from langchain_text_splitters import RecursiveCharacterTextSplitter
+    except ImportError:
+        return None
+    return RecursiveCharacterTextSplitter
 
 
 class TextProcessor:
     def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200) -> None:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-        self._splitter = None
-        if RecursiveCharacterTextSplitter is not None:
-            self._splitter = RecursiveCharacterTextSplitter(
+        self._splitter: Any | None = None
+        splitter_cls = _import_splitter()
+        if splitter_cls is not None:
+            self._splitter = splitter_cls(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
                 separators=["\n\n", "\n", " ", ""],
@@ -24,7 +31,8 @@ class TextProcessor:
         if not text.strip():
             return []
         if self._splitter is not None:
-            return self._splitter.split_text(text)
+            chunks: list[str] = self._splitter.split_text(text)
+            return chunks
         return _overlap_chunks(text, self.chunk_size, self.chunk_overlap)
 
 
