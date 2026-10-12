@@ -1,4 +1,4 @@
-"""Classify visual evidence from captions without storing binary assets."""
+"""Classify visual evidence and derive its caption text."""
 
 from __future__ import annotations
 
@@ -17,8 +17,13 @@ def classify_visual(caption: str | None) -> str:
     return EvidenceType.IMAGE.value
 
 
-def visual_caption(caption: str | None, element_type: str, index: int) -> str:
+def visual_caption(caption: str | None) -> str | None:
+    """The caption text, or None if there isn't one.
+
+    Previously fabricated a placeholder like "figure 3" for an uncaptioned
+    element; that string then got embedded as if it were real content,
+    polluting the vector index with text that describes nothing. Returning
+    None lets the caller skip embedding entirely for a unit with no caption.
+    """
     cleaned = (caption or "").strip()
-    if cleaned:
-        return cleaned
-    return f"{element_type} {index}"
+    return cleaned or None

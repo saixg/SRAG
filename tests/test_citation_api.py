@@ -77,3 +77,69 @@ async def test_resolve_and_inspect_authorized_evidence(client, rls_session):
     async with rls_session(DEV_TENANT_ID) as session:
         await session.execute(delete(Document).where(Document.id == doc_id))
         await session.flush()
+
+
+@pytest.mark.asyncio
+async def test_visual_endpoint_serves_content_type_and_enforces_tenant(
+    client, rls_session, monkeypatch, tmp_path
+):
+    """GET /evidence/{id}/visual: right Content-Type for the owner, 404 for
+    another tenant — the store roundtrip alone (test_visual_store_roundtrip)
+    doesn't cover either the endpoint's authorization or its media_type."""
+    import importlib
+
+    monkeypatch.setenv("VISUAL_STORE_DIR", str(tmp_path / "visuals"))
+    from srag.settings import get_settings
+
+    get_settings.cache_clear()
+    visual_store = importlib.import_module("srag.ingestion.visual_store")
+
+    doc_id = uuid.uuid4()
+    evidence_id = uuid.uuid4()
+    other_tenant = uuid.uuid4()
+
+    async with rls_session(DEV_TENANT_ID) as session:
+        if (await session.get(Tenant, DEV_TENANT_ID)) is None:
+            session.add(Tenant(id=DEV_TENANT_ID, name="Development Tenant"))
+        session.add(
+            Document(id=doc_id, tenant_id=DEV_TENANT_ID, filename="figure.png", content_hash="h")
+        )
+        session.add(
+            EvidenceUnitModel(
+                evidence_id=evidence_id,
+                tenant_id=DEV_TENANT_ID,
+                document_id=doc_id,
+                element_type="image",
+                visual_reference_id="figure.png_image",
+                structured_content={"content_type": "image/png"},
+                provenance={"source_filename": "figure.png", "extraction_method": "test"},
+            )
+        )
+        await session.flush()
+
+    visual_store.store_visual(DEV_TENANT_ID, "figure.png_image", b"png-bytes")
+
+    async with rls_session(other_tenant) as session:
+        session.add(Tenant(id=other_tenant, name="Other Tenant"))
+        await session.flush()
+
+    try:
+        owner = await client.get(
+            f"/api/v1/evidence/{evidence_id}/visual",
+            headers={"Authorization": "Bearer dev_token_123"},
+        )
+        assert owner.status_code == 200
+        assert owner.content == b"png-bytes"
+        assert owner.headers["content-type"] == "image/png"
+
+        foreign = await client.get(
+            f"/api/v1/evidence/{evidence_id}/visual",
+            headers={"Authorization": "Bearer demo_tenant_b"},
+        )
+        assert foreign.status_code == 404
+    finally:
+        async with rls_session(DEV_TENANT_ID) as session:
+            await session.execute(delete(Document).where(Document.id == doc_id))
+        async with rls_session(DEV_TENANT_ID) as session:
+            await session.execute(delete(Tenant).where(Tenant.id == other_tenant))
+        get_settings.cache_clear()

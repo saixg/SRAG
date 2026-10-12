@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import mimetypes
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -113,7 +114,7 @@ def _extract_candidates(
     is_image = filename.lower().endswith((".png", ".jpg", ".jpeg", ".tiff", ".tif", ".webp"))
     parser_type = metadata.get("parser", "docling")
     if is_image:
-        return _safe_ocr(file_path, filename)
+        return _image_candidates(file_path, filename)
 
     candidates: list[dict[str, Any]] = []
     try:
@@ -136,3 +137,50 @@ def _safe_ocr(file_path: str, filename: str) -> list[dict[str, Any]]:
     except RuntimeError:
         logger.warning("ocr parser unavailable", extra={"filename": filename})
         return []
+
+
+def _image_candidates(file_path: str, filename: str) -> list[dict[str, Any]]:
+    """OCR an uploaded image, then attach the image's own bytes once.
+
+    All OCR-line candidates (if any) and the fallback image-only candidate
+    (if OCR found nothing) share one visual_reference_id, since they're all
+    views onto the same stored image — only their bboxes differ.
+    """
+    candidates: list[dict[str, Any]] = _safe_ocr(file_path, filename)
+    if not candidates:
+        # OCR found no text, or isn't installed: still produce one evidence
+        # unit so the document isn't a total ingestion failure. text_content
+        # stays empty rather than a placeholder string, so nothing gets
+        # embedded for a unit with no actual text.
+        candidates = [
+            {
+                "element_id": "image_0",
+                "element_type": EvidenceType.IMAGE.value,
+                "text_content": None,
+                "source_location": {
+                    "page_number": 1,
+                    "bbox": None,
+                    "coordinate_system": None,
+                },
+                "provenance": {"source_filename": filename, "extraction_method": "image_upload"},
+            }
+        ]
+
+    visual_reference_id = f"{filename}_image"
+    content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    try:
+        with open(file_path, "rb") as handle:
+            image_bytes: bytes | None = handle.read()
+    except OSError:
+        logger.warning("could not read uploaded image bytes", extra={"filename": filename})
+        image_bytes = None
+
+    for i, candidate in enumerate(candidates):
+        candidate["visual_reference_id"] = visual_reference_id
+        structured = dict(candidate.get("structured_content") or {})
+        structured["content_type"] = content_type
+        candidate["structured_content"] = structured
+        if i == 0 and image_bytes is not None:
+            candidate["image_bytes"] = image_bytes
+
+    return candidates

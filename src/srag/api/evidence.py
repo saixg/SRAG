@@ -113,7 +113,9 @@ async def get_visual(
     payload = load_visual(user.tenant_id, row.visual_reference_id)
     if payload is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    return Response(content=payload, media_type="application/octet-stream")
+    structured = row.structured_content or {}
+    content_type = structured.get("content_type") or "application/octet-stream"
+    return Response(content=payload, media_type=content_type)
 
 
 def _visible(row: EvidenceUnitModel, user: UserIdentity) -> bool:

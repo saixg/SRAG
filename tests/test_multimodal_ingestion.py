@@ -1,3 +1,6 @@
+import io
+import sys
+import types
 import uuid
 from unittest.mock import patch
 
@@ -10,6 +13,7 @@ from srag.contracts.identity import TenantContext
 from srag.db.models import EvidenceUnitModel, Tenant
 from srag.ingestion.embedder import HashingEmbedder
 from srag.ingestion.multimodal_pipeline import MultimodalPipeline
+from srag.settings import get_settings
 
 
 @pytest.fixture
@@ -182,3 +186,204 @@ async def test_pdf_falls_back_to_ocr_when_docling_empty(
     units = result.scalars().all()
     assert len(units) == 1
     assert units[0].element_type == EvidenceType.OCR.value
+
+
+# --- 2.3: visual evidence actually carries bytes -----------------------------
+
+
+@pytest.mark.asyncio
+@patch("srag.ingestion.multimodal_pipeline.extract_with_ocr")
+async def test_image_upload_stores_the_file_bytes_once(
+    mock_extract, mock_ocr_extraction, db_session: AsyncSession, tmp_path, monkeypatch
+):
+    """Every OCR line shares one visual_reference_id; store_visual fires once."""
+    monkeypatch.setenv("VISUAL_STORE_DIR", str(tmp_path / "visuals"))
+    get_settings.cache_clear()
+    from srag.ingestion.visual_store import load_visual
+
+    second_line = {
+        "element_id": "ocr_1",
+        "element_type": EvidenceType.OCR.value,
+        "text_content": "Second line.",
+        "source_location": {
+            "page_number": 1,
+            "bbox": [5, 25, 50, 40],
+            "coordinate_system": "pixel",
+        },
+        "provenance": {"source_filename": "scan.jpg", "extraction_method": "paddleocr"},
+    }
+    mock_extract.return_value = [*mock_ocr_extraction, second_line]
+
+    tenant_id = uuid.uuid4()
+    db_session.add(Tenant(id=tenant_id, name="Visuals"))
+    await db_session.flush()
+    tenant = TenantContext(tenant_id=tenant_id, tenant_name="Visuals")
+    image_path = tmp_path / "scan.jpg"
+    image_path.write_bytes(b"real-image-bytes")
+
+    pipeline = MultimodalPipeline(embedder=HashingEmbedder())
+    doc = await pipeline.ingest_document(
+        session=db_session, tenant=tenant, filename="scan.jpg", file_path=str(image_path)
+    )
+
+    result = await db_session.execute(
+        select(EvidenceUnitModel).where(EvidenceUnitModel.document_id == doc.id)
+    )
+    units = result.scalars().all()
+    assert len(units) == 2
+    assert {u.visual_reference_id for u in units} == {"scan.jpg_image"}
+    for unit in units:
+        assert unit.structured_content["content_type"] == "image/jpeg"
+
+    assert load_visual(tenant_id, "scan.jpg_image") == b"real-image-bytes"
+    get_settings.cache_clear()
+
+
+@pytest.mark.asyncio
+@patch("srag.ingestion.multimodal_pipeline.extract_with_ocr")
+async def test_image_with_no_ocr_text_still_stores_the_image(
+    mock_extract, db_session: AsyncSession, tmp_path, monkeypatch
+):
+    """OCR found nothing (or isn't installed): one IMAGE unit, image bytes, no
+    placeholder text — nothing gets embedded for it."""
+    monkeypatch.setenv("VISUAL_STORE_DIR", str(tmp_path / "visuals"))
+    get_settings.cache_clear()
+    from srag.ingestion.visual_store import load_visual
+
+    mock_extract.return_value = []
+
+    tenant_id = uuid.uuid4()
+    db_session.add(Tenant(id=tenant_id, name="BlankOCR"))
+    await db_session.flush()
+    tenant = TenantContext(tenant_id=tenant_id, tenant_name="BlankOCR")
+    image_path = tmp_path / "blank.png"
+    image_path.write_bytes(b"png-bytes")
+
+    pipeline = MultimodalPipeline(embedder=HashingEmbedder())
+    doc = await pipeline.ingest_document(
+        session=db_session, tenant=tenant, filename="blank.png", file_path=str(image_path)
+    )
+
+    result = await db_session.execute(
+        select(EvidenceUnitModel).where(EvidenceUnitModel.document_id == doc.id)
+    )
+    units = result.scalars().all()
+    assert len(units) == 1
+    unit = units[0]
+    assert unit.element_type == EvidenceType.IMAGE.value
+    assert unit.text_content is None
+    assert unit.embedding is None
+    assert unit.visual_reference_id == "blank.png_image"
+    assert load_visual(tenant_id, "blank.png_image") == b"png-bytes"
+    get_settings.cache_clear()
+
+
+def _install_fake_docling(
+    monkeypatch, *, picture_image_bytes: bytes | None, raise_on_get_image: bool = False
+) -> None:
+    """Inject a minimal fake docling package into sys.modules.
+
+    docling/paddleocr aren't installed in this dev venv, so this is the only
+    way to exercise extract_with_docling's picture-image path deterministically
+    without the real library.
+    """
+
+    class _FakeImage:
+        def __init__(self, payload: bytes) -> None:
+            self._payload = payload
+
+        def save(self, buffer: io.BytesIO, format: str | None = None) -> None:
+            buffer.write(self._payload)
+
+    class _FakePicture:
+        def get_image(self, document: object) -> "_FakeImage | None":
+            if raise_on_get_image:
+                raise RuntimeError("simulated Docling API mismatch")
+            if picture_image_bytes is None:
+                return None
+            return _FakeImage(picture_image_bytes)
+
+    class _FakeDocument:
+        def __init__(self) -> None:
+            self.pictures = [_FakePicture()]
+
+        def export_to_dict(self) -> dict:
+            return {
+                "texts": [],
+                "tables": [],
+                "pictures": [
+                    {
+                        "text": "",
+                        "prov": [{"page_no": 1, "bbox": {"l": 0, "t": 0, "r": 10, "b": 10}}],
+                    }
+                ],
+            }
+
+    class _FakeConvertResult:
+        def __init__(self) -> None:
+            self.document = _FakeDocument()
+
+    class _FakeDocumentConverter:
+        def __init__(self, format_options: object | None = None) -> None:
+            self.format_options = format_options
+
+        def convert(self, file_path: str) -> "_FakeConvertResult":
+            return _FakeConvertResult()
+
+    class _FakePdfPipelineOptions:
+        def __init__(self) -> None:
+            self.generate_picture_images = False
+            self.images_scale = 1.0
+
+    class _FakePdfFormatOption:
+        def __init__(self, pipeline_options: object | None = None) -> None:
+            self.pipeline_options = pipeline_options
+
+    class _FakeInputFormat:
+        PDF = "pdf"
+
+    document_converter_module = types.ModuleType("docling.document_converter")
+    document_converter_module.DocumentConverter = _FakeDocumentConverter
+    document_converter_module.PdfFormatOption = _FakePdfFormatOption
+
+    pipeline_options_module = types.ModuleType("docling.datamodel.pipeline_options")
+    pipeline_options_module.PdfPipelineOptions = _FakePdfPipelineOptions
+
+    base_models_module = types.ModuleType("docling.datamodel.base_models")
+    base_models_module.InputFormat = _FakeInputFormat
+
+    fake_modules = {
+        "docling": types.ModuleType("docling"),
+        "docling.datamodel": types.ModuleType("docling.datamodel"),
+        "docling.datamodel.base_models": base_models_module,
+        "docling.datamodel.pipeline_options": pipeline_options_module,
+        "docling.document_converter": document_converter_module,
+    }
+    for name, module in fake_modules.items():
+        monkeypatch.setitem(sys.modules, name, module)
+
+
+def test_docling_picture_captures_image_bytes(monkeypatch):
+    from srag.ingestion.parsers.docling_parser import extract_with_docling
+
+    _install_fake_docling(monkeypatch, picture_image_bytes=b"fake-png-bytes")
+    candidates = extract_with_docling("ignored.pdf", "ignored.pdf")
+
+    pictures = [c for c in candidates if c["element_type"] == EvidenceType.IMAGE.value]
+    assert len(pictures) == 1
+    assert pictures[0]["image_bytes"] == b"fake-png-bytes"
+    assert pictures[0]["structured_content"]["content_type"] == "image/png"
+
+
+def test_docling_picture_degrades_when_get_image_fails(monkeypatch):
+    """A Docling API mismatch must not abort the parse — it degrades to a
+    caption-only figure, same as if picture images were never requested."""
+    from srag.ingestion.parsers.docling_parser import extract_with_docling
+
+    _install_fake_docling(monkeypatch, picture_image_bytes=None, raise_on_get_image=True)
+    candidates = extract_with_docling("ignored.pdf", "ignored.pdf")
+
+    pictures = [c for c in candidates if c["element_type"] == EvidenceType.IMAGE.value]
+    assert len(pictures) == 1
+    assert "image_bytes" not in pictures[0]
+    assert "content_type" not in (pictures[0]["structured_content"] or {})
