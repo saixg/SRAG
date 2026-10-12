@@ -1,0 +1,39 @@
+# Version control
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Secrets and local config
+.env
+.env.local
+.env.production
+
+# Node / frontend sources (dist/ is built in CI and copied explicitly)
+**/node_modules/
+srag-frontend/.vite/
+web/
+
+# Local runtime artifacts
+data/uploads/
+data/visuals/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docs and plans
+docs/
+*.md
+!README.md

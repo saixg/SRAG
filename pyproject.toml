@@ -9,6 +9,7 @@ description = "Secure Multimodal RAG — enterprise knowledge platform with perm
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
+    "python-multipart>=0.0.9",
     "uvicorn[standard]>=0.30.0",
     "pydantic>=2.7.0",
     "pydantic-settings>=2.3.0",
@@ -16,6 +17,16 @@ dependencies = [
     "asyncpg>=0.29.0",
     "alembic>=1.13.0",
     "structlog>=24.1.0",
+    "pgvector>=0.2.5",
+    "sentence-transformers>=2.7.0",
+    "langchain-text-splitters>=0.2.0",
+    "docling>=2.5.0",
+    "paddleocr>=2.8.0",
+    "paddlepaddle>=2.6.0",
+    "groq>=0.4.0",
+    "pyjwt>=2.9.0",
+    "httpx>=0.27.0",
+    "redis>=5.0.0",
 ]
 
 [project.optional-dependencies]
@@ -33,6 +44,8 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+asyncio_default_test_loop_scope = "session"
+asyncio_default_fixture_loop_scope = "session"
 pythonpath = ["src"]
 
 [tool.ruff]
@@ -51,5 +64,5 @@ warn_unused_configs = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = "asyncpg.*"
+module = ["asyncpg.*", "redis.*"]
 ignore_missing_imports = true

@@ -33,3 +33,14 @@ env/
 htmlcov/
 .coverage
 coverage.xml
+
+# Local ingest artifacts
+data/uploads/
+data/visuals/
+
+# Frontend builds
+srag-frontend/dist/
+srag-frontend/node_modules/
+tsconfig.tsbuildinfo
+web/node_modules/
+web/.next/
