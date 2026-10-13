@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
 import { StatusPill } from '../ui/primitives'
+import { SidebarTrigger } from '../ui/sidebar'
 import { fetchHealth } from '../../lib/rag'
 import { useTheme } from '../../lib/useTheme'
 
@@ -121,7 +122,7 @@ function ThemeToggle() {
   )
 }
 
-export function TopBar({ onOpenNav }) {
+export function TopBar() {
   return (
     <header
       style={{
@@ -135,15 +136,12 @@ export function TopBar({ onOpenNav }) {
         borderBottom: '1px solid var(--border)',
       }}
     >
-      <button
-        type="button"
-        onClick={onOpenNav}
-        aria-label="Open navigation"
-        className="srag-nav-toggle srag-icon-btn"
-        style={{ display: 'none' }}
-      >
+      {/* Collapses the rail on desktop, opens the sheet on mobile. Visible at
+          every width now: the collapse is a real desktop affordance, not just
+          a small-screen escape hatch. */}
+      <SidebarTrigger className="srag-icon-btn">
         <Icon name="menu" size={18} />
-      </button>
+      </SidebarTrigger>
 
       <GlobalSearch />
 

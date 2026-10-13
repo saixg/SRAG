@@ -3,7 +3,18 @@
   geometry stays consistent: two radii only, hairline borders, no shadows.
 */
 
+import { lazy, Suspense } from 'react'
 import { Icon } from './Icon'
+import { labelForOrbState } from '../../lib/format'
+
+/*
+  Both of these pull a canvas/WebGL engine in for one decorative or
+  single-purpose piece of a primitive. Behind lazy() they stay out of every
+  route's initial bundle and only arrive when something actually waits
+  (the orb) or opts into the metal ring.
+*/
+const LoadingOrb = lazy(() => import('./LoadingOrb'))
+const MetalButton = lazy(() => import('./MetalButton'))
 
 /* ---- Button -------------------------------------------------------------- */
 
@@ -27,24 +38,53 @@ export function Button({
   className = '',
   style,
   type = 'button',
+  metal = false,
+  metalTargets,
+  loadingState = 'working',
   ...props
 }) {
   const v = VARIANTS.has(variant) ? variant : 'outline'
   const s = SIZES.has(size) ? size : 'md'
   const inert = disabled || loading
-  return (
+  const button = (
     <button
       type={type}
       disabled={inert}
       aria-busy={loading || undefined}
       className={`srag-btn srag-btn--${v} srag-btn--${s} ${className}`.trim()}
-      style={style}
+      style={metal ? { borderRadius: 'var(--radius-full)', ...style } : style}
       {...props}
     >
-      {loading ? <Spinner size={14} /> : icon ? <Icon name={icon} size={16} /> : null}
+      {loading ? <Spinner size={14} state={loadingState} /> : icon ? <Icon name={icon} size={16} /> : null}
       {children}
       {iconRight ? <Icon name={iconRight} size={16} /> : null}
     </button>
+  )
+
+  /*
+    `metal` is opt-in per call site, never a default: each wrapped button is
+    one more live shader instance, and the ring only means "this is the one
+    action here" if a page has at most one or two of them. The unwrapped
+    button doubles as the Suspense fallback, so the control is clickable
+    from first paint and nothing shifts when the shader lands. It is paused
+    while inert -- a ring still travelling around a disabled control reads
+    as though the button were waiting on something.
+  */
+  if (!metal) return button
+  return (
+    <Suspense fallback={button}>
+      <MetalButton
+        variant="button"
+        preset="chromatic"
+        innerShadow
+        strength={0.85}
+        bend
+        paused={inert}
+        reflectionTargets={metalTargets}
+      >
+        {button}
+      </MetalButton>
+    </Suspense>
   )
 }
 
@@ -203,7 +243,7 @@ export function StatusPill({ tone = 'ok', children }) {
         whiteSpace: 'nowrap',
       }}
     >
-      <span style={{ width: 7, height: 7, borderRadius: 9999, background: dot, flexShrink: 0 }} />
+      <span style={{ width: 7, height: 7, borderRadius: 'var(--radius-full)', background: dot, flexShrink: 0 }} />
       {children}
     </span>
   )
@@ -211,12 +251,22 @@ export function StatusPill({ tone = 'ok', children }) {
 
 /* ---- Spinner ------------------------------------------------------------- */
 
-export function Spinner({ size = 16, label }) {
-  return (
+/*
+  Kept the name every call site already uses, but there is no spin left in
+  it: the app has exactly one loading animation (ui/LoadingOrb), and this is
+  the inline entry point to it. `state` names the wait so the orb animates
+  what is actually happening rather than a generic twirl; `size` is honored
+  for layout but the orb itself only has two tunings, so anything under 40px
+  renders the inline design.
+
+  The Suspense fallback is a *still* ring, not an animated one: it shows for
+  the few frames the orb chunk is still downloading, and a second animation
+  competing with the one that is about to replace it reads as a glitch.
+*/
+export function Spinner({ size = 16, label, state = 'working' }) {
+  const ring = (
     <span
-      role={label ? 'status' : undefined}
-      aria-label={label}
-      className="srag-spin"
+      aria-hidden="true"
       style={{
         width: size,
         height: size,
@@ -224,10 +274,59 @@ export function Spinner({ size = 16, label }) {
         display: 'inline-block',
         border: '2px solid currentColor',
         borderTopColor: 'transparent',
-        borderRadius: 9999,
-        opacity: 0.7,
+        borderRadius: 'var(--radius-full)',
+        opacity: 0.4,
       }}
     />
+  )
+  return (
+    <span
+      role={label ? 'status' : undefined}
+      aria-label={label || undefined}
+      style={{ display: 'inline-flex', flexShrink: 0, lineHeight: 0 }}
+    >
+      <Suspense fallback={ring}>
+        <LoadingOrb state={state} size={size >= 40 ? 64 : 20} />
+      </Suspense>
+    </span>
+  )
+}
+
+/* ---- Loading block ------------------------------------------------------- */
+
+/*
+  The placeholder for a list or card that is still loading. One orb carries
+  the motion and names the wait; the rows below it are flat blocks that hold
+  the space the real content will take, so nothing jumps when it arrives.
+
+  The rows deliberately do not shimmer. Two animations for one wait is
+  noise, and a shimmer with no shimmer (reduced motion) reads as a stray
+  gradient -- the orb degrades to a static frame on its own and still reads
+  as an orb.
+*/
+export function LoadingBlock({ rows = 3, height = 52, label, state = 'working', gap = 'var(--space-2)' }) {
+  return (
+    <div role="status" aria-live="polite" style={{ display: 'grid', gap: 'var(--space-3)' }}>
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 'var(--space-2)',
+          color: 'var(--ink-muted)',
+          fontSize: 'var(--text-body)',
+        }}
+      >
+        <Suspense fallback={null}>
+          <LoadingOrb state={state} size={20} />
+        </Suspense>
+        {label || labelForOrbState(state)}
+      </span>
+      <div aria-hidden="true" style={{ display: 'grid', gap }}>
+        {Array.from({ length: rows }, (_, i) => (
+          <Skeleton key={i} height={height} />
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -298,11 +397,18 @@ export function ErrorNote({ children, onRetry }) {
 
 /* ---- Skeleton ------------------------------------------------------------ */
 
+/*
+  A flat block holding the shape of content that has not arrived. It is a
+  placeholder, not an indicator: the orb in LoadingBlock (or alongside it)
+  is what tells the user something is happening. Prefer LoadingBlock -- a
+  bare Skeleton with no orb anywhere near it is a wait with no
+  announcement.
+*/
 export function Skeleton({ width = '100%', height = 14, radius = 'var(--radius-sm)', style }) {
   return (
     <span
       aria-hidden="true"
-      className="srag-shimmer"
+      className="srag-placeholder"
       style={{ display: 'block', width, height, borderRadius: radius, ...style }}
     />
   )

@@ -17,6 +17,28 @@ Use this before a pilot deploy. Development and CI keep demo tokens and hashing 
 | `CORS_ORIGINS` | explicit origins, never `*` |
 | `DATABASE_URL` | Supabase pooler URI |
 
+### Connection pooler
+
+`*.pooler.supabase.com` serves session mode on **5432** and transaction mode on
+**6543**. Either works: the engine switches asyncpg's statement caches off by
+itself when the URL names 6543 (`Settings.db_is_transaction_pooler`), because a
+transaction-mode backend is shared between clients and cannot keep prepared
+statements. Tenant isolation does not depend on the mode — `set_config(...,
+true)` and `SET LOCAL ROLE` are transaction-local, so Postgres reverts them at
+COMMIT and a recycled connection can never carry another tenant's binding.
+
+asyncpg enables `TCP_NODELAY` but never `SO_KEEPALIVE`, so a connection held
+across a long CPU/GPU-bound gap (embedding a batch) sends nothing and the flow
+can be dropped between here and the pooler; the next statement then fails with
+`connection was closed in the middle of operation`. `create_engine_from_settings`
+turns keepalives on, bounds connection reuse with `pool_recycle` (keep it under
+Supavisor's 3600s server lifetime) and pre-pings on checkout. **Scripts must use
+that factory rather than calling `create_async_engine` directly.** Tunables:
+`DB_KEEPALIVE_IDLE`, `DB_KEEPALIVE_INTERVAL`, `DB_KEEPALIVE_COUNT`,
+`DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_RECYCLE`, `DB_POOL_TIMEOUT`,
+`DB_COMMAND_TIMEOUT`. Keep `DB_POOL_SIZE + DB_MAX_OVERFLOW` per process well
+under the instance's `max_connections` (60 on the current plan).
+
 Optional: `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` so `POST /api/v1/tenants/bootstrap` writes `app_metadata.tenant_id` onto the Supabase user. Without them, bootstrap still creates the tenant and user rows and returns `claim_updated: false`. The next access token must carry `app_metadata.tenant_id` or queries return 401.
 
 ## Identity

@@ -8,6 +8,7 @@ import {
   EmptyState,
   ErrorNote,
   IconTile,
+  LoadingBlock,
   MicroLabel,
   Skeleton,
 } from '../components/ui/primitives'
@@ -204,10 +205,7 @@ function SecureScopePanel() {
         <div style={{ display: 'grid', gap: 8 }}>
           <MicroLabel>Collections in scope</MicroLabel>
           {loading ? (
-            <>
-              <Skeleton height={34} />
-              <Skeleton height={34} />
-            </>
+            <LoadingBlock rows={2} height={34} state="searching" label="Resolving your scope…" />
           ) : error ? (
             <p style={{ fontSize: 'var(--text-body)', color: 'var(--ink-subtle)' }}>Unavailable</p>
           ) : collections?.length ? (
@@ -282,10 +280,8 @@ function RecentPanel() {
       </div>
       <div style={{ padding: 'var(--space-3) var(--space-3)' }}>
         {loading ? (
-          <div style={{ display: 'grid', gap: 10, padding: 'var(--space-2)' }}>
-            <Skeleton height={40} />
-            <Skeleton height={40} />
-            <Skeleton height={40} />
+          <div style={{ padding: 'var(--space-2)' }}>
+            <LoadingBlock rows={3} height={40} gap="10px" state="searching" label="Loading recent activity…" />
           </div>
         ) : error ? (
           <p style={{ padding: 'var(--space-3)', fontSize: 'var(--text-body)', color: 'var(--ink-subtle)' }}>

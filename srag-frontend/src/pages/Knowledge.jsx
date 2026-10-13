@@ -1,21 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Icon } from '../components/ui/Icon'
-import {
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  ErrorNote,
-  IconTile,
-  MicroLabel,
-  PageHeader,
-  Skeleton,
-  TextInput,
-} from '../components/ui/primitives'
+import { Badge, Button, Card, EmptyState, ErrorNote, IconTile, LoadingBlock, MicroLabel, PageHeader, Spinner, TextInput } from '../components/ui/primitives'
 import { Composer } from '../components/securerag/Composer'
 import { assignCollection, fetchCollections, fetchDocuments, uploadDocument } from '../lib/rag'
 import { useApiResource, usePersona } from '../lib/useApi'
+import { labelForOrbState } from '../lib/format'
 
 const ACCEPTED = '.txt, .md, .pdf, .png, .jpg, .jpeg, .tiff, .webp'
 
@@ -85,9 +75,19 @@ export function Knowledge() {
               placeholder="Ask about this knowledge base, or attach files, images and scans…"
             />
             {busy ? (
-              <p style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-body)', color: 'var(--ink-muted)' }}>
-                <Icon name="refresh" size={15} />
-                Uploading and ingesting…
+              /*
+                Was a static refresh glyph next to the words -- an icon that
+                looked like it should be spinning and wasn't. Ingest is the
+                longest wait in the product, so it gets the same orb as every
+                other wait, in the state that names what it is doing.
+              */
+              <p
+                role="status"
+                aria-live="polite"
+                style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-body)', color: 'var(--ink-muted)' }}
+              >
+                <Spinner size={16} state="weaving" />
+                {labelForOrbState('weaving')}
               </p>
             ) : null}
             <ErrorNote>{uploadError}</ErrorNote>
@@ -121,11 +121,7 @@ export function Knowledge() {
           </div>
 
           {loading ? (
-            <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
-              <Skeleton height={72} radius="var(--radius-md)" />
-              <Skeleton height={72} radius="var(--radius-md)" />
-              <Skeleton height={72} radius="var(--radius-md)" />
-            </div>
+            <LoadingBlock rows={3} height={72} state="searching" label="Loading documents…" />
           ) : documents?.length ? (
             <ul style={{ display: 'grid', gap: 'var(--space-2)' }}>
               {documents.map((document) => (
@@ -185,7 +181,16 @@ function DocumentRow({ document, collections, token, onSaved }) {
               {document.filename}
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+              {/*
+                A document still being ingested is doing work, so its badge
+                carries the orb too -- the same animation the upload line
+                above shows, so a row that is still processing looks busy
+                rather than merely differently coloured. Deliberately the
+                inline (20px) tuning and only on rows that are processing:
+                one orb per *waiting* row, never one per row.
+              */}
               <Badge tone={processing ? 'warn' : 'ok'}>
+                {processing ? <Spinner size={13} state="working" /> : null}
                 {processing ? 'Processing' : 'Ready'}
               </Badge>
               {document.collection ? <Badge tone="accent">{document.collection}</Badge> : null}
@@ -231,7 +236,7 @@ function DocumentRow({ document, collections, token, onSaved }) {
                 <option key={collection.name} value={collection.name} />
               ))}
             </datalist>
-            <Button variant="primary" onClick={save} loading={saving}>
+            <Button variant="primary" onClick={save} loading={saving} metal>
               Save
             </Button>
             <Button variant="ghost" onClick={() => setEditing(false)} disabled={saving}>

@@ -9,20 +9,21 @@ import sys
 from pathlib import Path
 
 from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from srag.api.auth import DEV_TENANT_ID
 from srag.contracts.evidence import EvidenceType
 from srag.db.models import Document, EvidenceUnitModel, Tenant
+from srag.db.session import create_engine_from_settings
 from srag.ingestion.embedder import HashingEmbedder
 from srag.settings import get_settings
 
 
 async def main() -> None:
     settings = get_settings()
-    engine = create_async_engine(settings.database_url)
+    engine = create_engine_from_settings(settings)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     csv_path = Path(__file__).parent.parent / "data" / "Employee.csv"
     if not csv_path.exists():

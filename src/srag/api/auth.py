@@ -23,6 +23,7 @@ DEV_TENANT_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
 DEV_USER_ID = uuid.UUID("11111111-1111-4000-8000-111111111111")
 TENANT_A_ID = uuid.UUID("00000000-0000-0000-0000-00000000000a")
 TENANT_B_ID = uuid.UUID("00000000-0000-0000-0000-00000000000b")
+BENCH_TENANT_ID = uuid.UUID("00000000-0000-4000-8000-0000000000be")
 
 _UNAUTH = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -243,5 +244,28 @@ def _demo_identities() -> dict[str, UserIdentity]:
             tenant=TenantContext(tenant_id=TENANT_A_ID, tenant_name="Guest"),
             email="guest@bevel.dev",
             roles=["guest"],
+        ),
+        # The EnterpriseRAG-Bench corpus scopes documents by source system
+        # (srag.datasets.enterprise_bench.SOURCE_COLLECTIONS), so these
+        # personas differ by collection, not only by role.
+        "demo_bench_engineer": UserIdentity(
+            user_id=uuid.UUID("beeeeeee-1111-4000-8000-beeeeeeeeee1"),
+            tenant=TenantContext(tenant_id=BENCH_TENANT_ID, tenant_name="EnterpriseRAG-Bench"),
+            email="engineer@redwood.bench",
+            roles=["engineer", "user"],
+            collections=["engineering"],
+        ),
+        "demo_bench_sales": UserIdentity(
+            user_id=uuid.UUID("beeeeeee-1111-4000-8000-beeeeeeeeee2"),
+            tenant=TenantContext(tenant_id=BENCH_TENANT_ID, tenant_name="EnterpriseRAG-Bench"),
+            email="sales@redwood.bench",
+            roles=["sales", "user"],
+            collections=["sales"],
+        ),
+        "demo_bench_admin": UserIdentity(
+            user_id=uuid.UUID("beeeeeee-1111-4000-8000-beeeeeeeeee3"),
+            tenant=TenantContext(tenant_id=BENCH_TENANT_ID, tenant_name="EnterpriseRAG-Bench"),
+            email="admin@redwood.bench",
+            roles=["admin"],
         ),
     }

@@ -1,14 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Icon } from '../components/ui/Icon'
-import {
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  ErrorNote,
-  PageHeader,
-  Skeleton,
-} from '../components/ui/primitives'
+import { Badge, Button, Card, EmptyState, ErrorNote, LoadingBlock, PageHeader } from '../components/ui/primitives'
 import { fetchAudit } from '../lib/rag'
 import { useApiResource } from '../lib/useApi'
 import { labelForAction, relativeTime } from '../lib/format'
@@ -63,10 +55,8 @@ export function Audit() {
         <ErrorNote onRetry={reload}>{error}</ErrorNote>
 
         {loading ? (
-          <Card padded={false} style={{ padding: 'var(--space-4)', display: 'grid', gap: 'var(--space-2)' }}>
-            <Skeleton height={52} radius="var(--radius-sm)" />
-            <Skeleton height={52} radius="var(--radius-sm)" />
-            <Skeleton height={52} radius="var(--radius-sm)" />
+          <Card padded={false} style={{ padding: 'var(--space-4)' }}>
+            <LoadingBlock rows={3} height={52} state="searching" label="Loading audit events…" />
           </Card>
         ) : rows.length ? (
           <Card padded={false}>

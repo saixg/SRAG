@@ -1,12 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Composer } from '../components/securerag/Composer'
 import { TrustTrace } from '../components/securerag/TrustTrace'
 import { Icon } from '../components/ui/Icon'
-import { Badge, Button, Card, IconTile, MicroLabel, Spinner } from '../components/ui/primitives'
+import { Badge, Button, Card, IconTile, MicroLabel } from '../components/ui/primitives'
 import { useCopilot } from '../store/copilot'
 import { usePersona } from '../lib/useApi'
-import { citationLabel } from '../lib/format'
+import { citationLabel, labelForOrbState, orbStateForTrace } from '../lib/format'
+
+// thinking-orbs' canvas engine only matters once a question is in flight,
+// never on first paint of this page.
+const LoadingOrb = lazy(() => import('../components/ui/LoadingOrb'))
+// The metal in the wordmark is decoration on a header that must paint
+// immediately, so it arrives after it, over the plain heading.
+const MetalTextFx = lazy(() => import('../components/ui/MetalTextFx'))
 
 const STARTERS = [
   'What is the operating pressure of V-104?',
@@ -39,23 +46,44 @@ export function SecureRAG() {
 
   const empty = messages.length === 0
 
+  const privacyBadge = (
+    <Badge tone="neutral">
+      <Icon name="lock" size={12} />
+      Private by design
+    </Badge>
+  )
+
   return (
     <div className="srag-chat">
       <header className="srag-chat__head">
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 0 }}>
           <IconTile name="sparkle" />
           <div style={{ minWidth: 0 }}>
-            <h1 style={{ fontSize: 'var(--text-lg)', letterSpacing: 'var(--tracking-lg)' }}>SecureRAG</h1>
+            {/*
+              MetalText paints the glyphs itself, so the `font` shorthand has
+              to say what this h1 would otherwise have rendered -- the same
+              --text-lg / semibold / Geist the plain heading uses -- or the
+              metal lands off the letterforms. The plain h1 is the fallback
+              and stays the accessible heading either way.
+            */}
+            <h1 style={{ fontSize: 'var(--text-lg)', letterSpacing: 'var(--tracking-lg)' }}>
+              <Suspense fallback="SecureRAG">
+                <MetalTextFx
+                  font="600 19px/1.2 var(--font-sans)"
+                  color="var(--ink-strong)"
+                  strength={0.9}
+                >
+                  SecureRAG
+                </MetalTextFx>
+              </Suspense>
+            </h1>
             <p style={{ color: 'var(--ink-muted)', fontSize: 'var(--text-body)' }}>
               Answering as {persona.label} · {persona.tenant}
             </p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-          <Badge tone="neutral">
-            <Icon name="lock" size={12} />
-            Private by design
-          </Badge>
+          {privacyBadge}
           {!empty ? (
             <Button variant="outline" size="sm" icon="plus" onClick={clearChat}>
               New conversation
@@ -104,6 +132,7 @@ export function SecureRAG() {
                       message={message}
                       onOpenEvidence={openEvidence}
                       streaming={loading && message === messages[messages.length - 1]}
+                      trace={trace}
                     />
                   )}
                 </li>
@@ -125,6 +154,8 @@ export function SecureRAG() {
             onSubmit={ask}
             busy={loading}
             autoFocus
+            voiceInput
+            beam
             placeholder="Ask anything about documents you can access…"
             footnote="Answers respect your permissions and never train public models."
           />
@@ -155,7 +186,7 @@ function UserMessage({ content }) {
   )
 }
 
-function AssistantMessage({ message, onOpenEvidence, streaming }) {
+function AssistantMessage({ message, onOpenEvidence, streaming, trace }) {
   const refused = message.refused
   return (
     <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
@@ -195,9 +226,15 @@ function AssistantMessage({ message, onOpenEvidence, streaming }) {
           >
             {message.content}
             {streaming && !message.content ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--ink-muted)' }}>
-                <Spinner size={14} label="Generating" />
-                Checking authorized evidence…
+              <span
+                role="status"
+                aria-live="polite"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--ink-muted)' }}
+              >
+                <Suspense fallback={null}>
+                  <LoadingOrb state={orbStateForTrace(trace)} size={20} />
+                </Suspense>
+                {labelForOrbState(orbStateForTrace(trace))}
               </span>
             ) : null}
           </p>

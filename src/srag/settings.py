@@ -21,6 +21,12 @@ class EmbedderProvider(StrEnum):
     HASHING = "hashing"
 
 
+class EmbedderDevice(StrEnum):
+    AUTO = "auto"
+    CPU = "cpu"
+    CUDA = "cuda"
+
+
 class CacheBackend(StrEnum):
     MEMORY = "memory"
     REDIS = "redis"
@@ -47,9 +53,46 @@ class Settings(BaseSettings):
         description="Async SQLAlchemy connection string",
     )
 
+    # --- Connection health (remote pooler) -------------------------------
+    # asyncpg sets TCP_NODELAY but never SO_KEEPALIVE, so a connection that
+    # sits idle while we embed a batch has no liveness traffic at all and any
+    # NAT or stateful firewall on the path silently drops the flow. The next
+    # INSERT then fails with "connection was closed in the middle of
+    # operation". These defaults keep the flow alive during long gaps.
+    db_keepalive_idle: int = Field(
+        default=30, description="Seconds of idle before the first TCP keepalive probe"
+    )
+    db_keepalive_interval: int = Field(
+        default=10, description="Seconds between TCP keepalive probes"
+    )
+    db_keepalive_count: int = Field(
+        default=5, description="Unanswered keepalive probes before the socket is dropped"
+    )
+    db_pool_size: int = Field(default=10, description="Pooled connections per process")
+    db_max_overflow: int = Field(default=5, description="Burst connections above db_pool_size")
+    db_pool_recycle: int = Field(
+        default=1800,
+        description="Recycle a pooled connection after this many seconds; must stay "
+        "below the pooler's own server lifetime (Supavisor: 3600s)",
+    )
+    db_pool_timeout: int = Field(default=30, description="Seconds to wait for a pooled connection")
+    db_command_timeout: float = Field(
+        default=120.0,
+        description="asyncpg per-command timeout; matches the server statement_timeout "
+        "so a wedged socket surfaces as an error instead of hanging forever",
+    )
+
     embedder_provider: EmbedderProvider = EmbedderProvider.LOCAL
     embedder_model_name: str = "BAAI/bge-m3"
     embedder_dimension: int = 1024
+    embedder_device: EmbedderDevice = Field(
+        default=EmbedderDevice.AUTO,
+        description="Device for the local embedder: auto picks CUDA when usable, else CPU",
+    )
+    embedder_batch_size: int = Field(
+        default=16,
+        description="Chunks per encode call; keep modest so BGE-M3 fits a 4GB GPU",
+    )
 
     secret_key: SecretStr = Field(default=SecretStr(_DEFAULT_SECRET))
     supabase_jwt_secret: SecretStr | None = Field(
@@ -117,6 +160,23 @@ class Settings(BaseSettings):
             raise RuntimeError("REDIS_URL is required when CACHE_BACKEND=redis")
         if any(origin == "*" for origin in self.cors_origin_list):
             raise RuntimeError("CORS_ORIGINS must be an explicit allowlist in production")
+
+    @property
+    def db_is_transaction_pooler(self) -> bool:
+        """True when DATABASE_URL points at Supavisor's transaction-mode port.
+
+        Supabase serves session mode on 5432 and transaction mode on 6543.
+        Transaction mode multiplexes one backend across clients, so server-side
+        prepared statements cannot be reused and both asyncpg caches must be
+        switched off. Tenant binding stays safe either way because
+        ``set_config(..., true)`` and ``SET LOCAL ROLE`` are transaction-local.
+        """
+        from urllib.parse import urlsplit
+
+        try:
+            return urlsplit(self.database_url).port == 6543
+        except ValueError:
+            return False
 
     @property
     def is_testing(self) -> bool:

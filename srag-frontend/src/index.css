@@ -116,10 +116,14 @@
   --space-10: 40px;
   --space-12: 48px;
 
-  /* ---- Radii (exactly two, per the design system) ------------------------ */
+  /* ---- Radii ------------------------------------------------------------- */
   --radius-xs: 6px;   /* chips nested inside an 8px container */
   --radius-sm: 8px;   /* buttons, badges, nav items, inputs */
   --radius-md: 12px;  /* cards, icon tiles, panels */
+  /* Pill. Only for controls a metal-fx ring is wrapped around (its circle
+     variant draws a true circle, so a 8px-radius child shows the mismatch at
+     the corners) and for the dots and bars that were hardcoding 9999px. */
+  --radius-full: 9999px;
 
   /* ---- Motion ------------------------------------------------------------ */
   /* One easing curve for the whole app. Durations stay short because this is a
@@ -131,6 +135,9 @@
 
   /* ---- Layout ------------------------------------------------------------ */
   --sidebar-width: 256px;
+  /* The collapsed icon rail: 12px of padding either side of a 40px row, which
+     is what centres an 18px nav glyph without the row touching the edge. */
+  --sidebar-width-icon: 64px;
   --topbar-height: 64px;
   --rail-width: 340px;
   --content-max: 1400px;
@@ -268,11 +275,10 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 /* Scrollbars stay quiet so they don't compete with the hairline system. */
 *::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-track { background: transparent; }
-*::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 9999px; border: 3px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--radius-full); border: 3px solid transparent; background-clip: content-box; }
 *::-webkit-scrollbar-thumb:hover { background: var(--ink-subtle); background-clip: content-box; }
 
 @keyframes srag-spin { to { transform: rotate(360deg); } }
-@keyframes srag-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 @keyframes srag-reveal { from { opacity: 0; transform: translateY(8px); } }
 @keyframes srag-fade { from { opacity: 0; } }
 @keyframes srag-slide-in { from { opacity: 0; transform: translateX(16px); } }
@@ -289,12 +295,11 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 /* The nav drawer is anchored left, so it owes the mirrored direction. */
 .srag-drawer-nav.srag-slide-in { animation-name: srag-slide-in-left; }
 
-.srag-spin { animation: srag-spin 700ms linear infinite; }
-.srag-shimmer {
-  background: linear-gradient(90deg, var(--surface-sunken) 25%, var(--surface-shimmer) 50%, var(--surface-sunken) 75%);
-  background-size: 200% 100%;
-  animation: srag-shimmer 1.3s ease-in-out infinite;
-}
+/* Loading placeholders no longer shimmer. The app has exactly one loading
+   animation -- the thought orb (ui/LoadingOrb), which every wait renders --
+   and a travelling gradient next to it was a second animation describing the
+   same wait. These blocks just hold the shape the content will take. */
+.srag-placeholder { background: var(--surface-sunken); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -306,9 +311,13 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
      hold each element at `opacity: 0` for its share of the stagger, so the
      list would appear one item at a time with no animation to explain it. */
   .srag-reveal, .srag-fade, .srag-slide-in { animation-delay: 0ms !important; }
-  /* A spinner with no spin still reads as a ring. A shimmer with no shimmer
-     reads as a stray gradient, so flatten it instead. */
-  .srag-shimmer { background: var(--surface-sunken); }
+  /* The JS-driven effects are not reachable from here: thinking-orbs renders
+     a static representative frame by itself, while border-beam's line/rotate
+     types, voice-glow and metal-fx are each told about reduced motion by
+     their React wrappers (Composer, VoiceInputAddon, MetalButton,
+     MetalTextFx, MetalBadgeFx). All of them hold a still frame rather than
+     disappearing -- a frozen orb still reads as an orb, and a static beam
+     still reads as a lit edge. */
 }
 
 /* ---- Button -------------------------------------------------------------- */
@@ -398,7 +407,9 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   color: var(--ink-inverse);
 }
 
-/* Composer submit. Square by design, so it needs its own floor on touch. */
+/* Composer submit. Round, because metal-fx's `circle` variant draws a true
+   circle around it; a square child under a round ring shows four gaps at the
+   corners. It needs its own floor on touch (see the coarse-pointer block). */
 .srag-send {
   display: inline-flex;
   align-items: center;
@@ -407,7 +418,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   height: 36px;
   flex-shrink: 0;
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   background: var(--surface-sunken);
   color: var(--ink-subtle);
   cursor: not-allowed;
@@ -532,6 +543,15 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   border-color: var(--border-strong);
   color: var(--ink-strong);
 }
+/* Same control, circular: for the ones a metal-fx `circle` ring wraps. The
+   fixed box is what makes it a circle rather than a lozenge -- padding alone
+   leaves it as wide as its glyph plus padding. */
+.srag-icon-btn--round {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--radius-full);
+}
 .srag-icon-btn:active:not(:disabled) { transform: translateY(1px); }
 .srag-icon-btn:disabled { cursor: not-allowed; color: var(--ink-subtle); opacity: 0.6; }
 
@@ -545,12 +565,16 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   .srag-btn,
   .srag-input,
   .srag-search,
-  .srag-icon-btn,
   .srag-dashed-action,
   .srag-citation,
   .srag-starter,
   .srag-chip,
   select { min-height: 44px; }
+
+  /* Square icon-only control: needs the floor on both axes, not just
+     height, or a narrow one (e.g. the voice composer's mic toggle, which
+     declares no explicit width) measures short on width alone. */
+  .srag-icon-btn { min-height: 44px; min-width: 44px; }
 
   .srag-send { width: 44px; height: 44px; }
 
@@ -763,8 +787,10 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 
 @media (max-width: 900px) {
-  .srag-sidebar { display: none; }
-  .srag-nav-toggle { display: inline-flex !important; }
+  /* The sidebar owns its own breakpoint now (components/ui/sidebar.css): below
+     this width it renders as an overlay sheet instead of being hidden here,
+     and its trigger is visible at every width, so the old `.srag-sidebar` /
+     `.srag-nav-toggle` overrides are gone. */
   .srag-page { padding: var(--space-5) var(--space-4) var(--space-10); }
   .srag-chat__head { padding: var(--space-4); }
   .srag-chat__inner { padding: 0 var(--space-4); }
@@ -780,6 +806,10 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   .srag-chat__inner { padding: 0 var(--space-3); }
   .srag-chat__composer { padding: var(--space-3); }
   .srag-chat__head { padding: var(--space-3); }
+  /* The chat composer's retrieval beam blooms a few px outside the card. At
+     this width the composer's padding is 12px, so the bloom is dimmed rather
+     than clipped -- cropping it would leave a visible straight edge. */
+  .srag-chat__composer [data-beam-bloom] { opacity: 0.55; }
   /* A 256px drawer on a 375px screen leaves a 119px scrim. Give it more. */
   .srag-drawer-nav { width: 86vw !important; max-width: 300px; }
   .srag-citation { max-width: 100%; }

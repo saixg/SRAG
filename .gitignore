@@ -37,8 +37,10 @@ coverage.xml
 # Local ingest artifacts
 data/uploads/
 data/visuals/
+data/enterprise_bench/
 
 # Frontend builds
+node_modules/
 srag-frontend/dist/
 srag-frontend/node_modules/
 tsconfig.tsbuildinfo

@@ -11,4 +11,27 @@ export const PERSONAS = [
   { id: 'admin', label: 'Admin', tenant: 'Development Tenant', token: 'demo_admin' },
   { id: 'tenant-b', label: 'Tenant B user', tenant: 'Tenant B', token: 'demo_tenant_b' },
   { id: 'guest', label: 'Guest', tenant: 'Tenant A', token: 'demo_guest' },
+  // Benchmark tenant. These differ by collection as well as role, because the
+  // EnterpriseRAG-Bench corpus is scoped by the source system each document
+  // came from: engineering (github/jira/linear), sales (hubspot), docs
+  // (confluence/drive). Switching between them changes which evidence the same
+  // enterprise question can reach.
+  {
+    id: 'bench-engineer',
+    label: 'Bench engineer',
+    tenant: 'EnterpriseRAG-Bench',
+    token: 'demo_bench_engineer',
+  },
+  {
+    id: 'bench-sales',
+    label: 'Bench sales',
+    tenant: 'EnterpriseRAG-Bench',
+    token: 'demo_bench_sales',
+  },
+  {
+    id: 'bench-admin',
+    label: 'Bench admin',
+    tenant: 'EnterpriseRAG-Bench',
+    token: 'demo_bench_admin',
+  },
 ]

@@ -26,6 +26,7 @@ import { Lifebuoy } from '@phosphor-icons/react/dist/csr/Lifebuoy'
 import { List } from '@phosphor-icons/react/dist/csr/List'
 import { Lock } from '@phosphor-icons/react/dist/csr/Lock'
 import { MagnifyingGlass } from '@phosphor-icons/react/dist/csr/MagnifyingGlass'
+import { Microphone } from '@phosphor-icons/react/dist/csr/Microphone'
 import { Moon } from '@phosphor-icons/react/dist/csr/Moon'
 import { PaperPlaneTilt } from '@phosphor-icons/react/dist/csr/PaperPlaneTilt'
 import { Paperclip } from '@phosphor-icons/react/dist/csr/Paperclip'
@@ -35,6 +36,7 @@ import { Shield } from '@phosphor-icons/react/dist/csr/Shield'
 import { ShieldCheck } from '@phosphor-icons/react/dist/csr/ShieldCheck'
 import { Sparkle } from '@phosphor-icons/react/dist/csr/Sparkle'
 import { SquaresFour } from '@phosphor-icons/react/dist/csr/SquaresFour'
+import { StopCircle } from '@phosphor-icons/react/dist/csr/StopCircle'
 import { Sun } from '@phosphor-icons/react/dist/csr/Sun'
 import { Table } from '@phosphor-icons/react/dist/csr/Table'
 import { Tray } from '@phosphor-icons/react/dist/csr/Tray'
@@ -65,6 +67,7 @@ const GLYPHS = {
   lifebuoy: Lifebuoy,
   lock: Lock,
   menu: List,
+  microphone: Microphone,
   moon: Moon,
   paperclip: Paperclip,
   plus: Plus,
@@ -75,6 +78,7 @@ const GLYPHS = {
   shield: Shield,
   shieldCheck: ShieldCheck,
   sparkle: Sparkle,
+  stopCircle: StopCircle,
   sun: Sun,
   table: Table,
   users: Users,

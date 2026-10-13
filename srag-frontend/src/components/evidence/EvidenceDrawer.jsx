@@ -146,8 +146,12 @@ export function EvidenceDrawer() {
 
         <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-5)', display: 'grid', gap: 'var(--space-4)', alignContent: 'start' }}>
           {loadingEvidence ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--ink-muted)' }}>
-              <Spinner size={16} label="Loading evidence" />
+            <div
+              role="status"
+              aria-live="polite"
+              style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--ink-muted)' }}
+            >
+              <Spinner size={16} state="searching" />
               Opening authorized source…
             </div>
           ) : !evidence ? (
@@ -181,7 +185,12 @@ export function EvidenceDrawer() {
                     color: 'var(--ink-muted)',
                   }}
                 >
-                  <Spinner size={18} label="Loading image" />
+                  {/*
+                    A 180px panel is the one place in the app with room for
+                    the orb's chat-avatar tuning, which is a separate design
+                    rather than a scaled-up inline one.
+                  */}
+                  <Spinner size={44} state="shaping" label="Loading page image" />
                 </div>
               ) : visualUrl ? (
                 <figure style={{ margin: 0, position: 'relative' }}>

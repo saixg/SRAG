@@ -10,11 +10,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from sqlalchemy import delete, select, text
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from srag.api.auth import DEV_TENANT_ID
 from srag.contracts.identity import TenantContext, UserIdentity
 from srag.db.models import Tenant
+from srag.db.session import create_engine_from_settings
 from srag.generation.generator import GroqLLMClient, StubLLMClient
 from srag.ingestion.embedder import HashingEmbedder
 from srag.ingestion.pipeline import IngestionPipeline
@@ -47,7 +48,7 @@ async def tenant_session(factory, tenant_id: uuid.UUID):
 
 async def main() -> int:
     settings = get_settings()
-    engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+    engine = create_engine_from_settings(settings)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     embedder = HashingEmbedder(dimension=settings.embedder_dimension)
     tenant = TenantContext(tenant_id=DEV_TENANT_ID, tenant_name="Development Tenant")

@@ -1,14 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
 import { Icon } from '../components/ui/Icon'
-import {
-  Badge,
-  Card,
-  EmptyState,
-  ErrorNote,
-  IconTile,
-  PageHeader,
-  Skeleton,
-} from '../components/ui/primitives'
+import { Badge, Card, EmptyState, ErrorNote, IconTile, LoadingBlock, PageHeader } from '../components/ui/primitives'
 import { fetchDocuments, fetchEvidenceList } from '../lib/rag'
 import { useApiResource } from '../lib/useApi'
 import { useCopilot } from '../store/copilot'
@@ -109,11 +101,7 @@ export function Evidence() {
         <ErrorNote onRetry={reload}>{error}</ErrorNote>
 
         {loading ? (
-          <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
-            <Skeleton height={84} radius="var(--radius-md)" />
-            <Skeleton height={84} radius="var(--radius-md)" />
-            <Skeleton height={84} radius="var(--radius-md)" />
-          </div>
+          <LoadingBlock rows={3} height={84} state="searching" label="Loading authorized evidence…" />
         ) : units?.length ? (
           <ul style={{ display: 'grid', gap: 'var(--space-2)' }}>
             {units.map((unit) => (

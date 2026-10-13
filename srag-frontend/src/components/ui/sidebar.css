@@ -1,0 +1,308 @@
+/*
+  Sidebar styling, written against the app's existing tokens (--surface-nav,
+  --ink-on-nav, --border-nav, the 4px spacing scale, the two radii) rather than
+  shadcn's `--sidebar-*` palette. Light and dark both come for free: every
+  value below is a variable that index.css already redefines per theme.
+
+  The collapsed ("icon rail") state is expressed entirely here, keyed off
+  [data-state] on the <aside>, so the JSX never branches on it.
+*/
+
+.srag-sb-wrapper {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ---- The sidebar panel ---------------------------------------------------- */
+
+.srag-sb {
+  position: relative;
+  flex-shrink: 0;
+  height: 100%;
+  width: var(--sidebar-width);
+  background: var(--surface-nav);
+  color: var(--ink-on-nav);
+  border-right: 1px solid var(--border-nav);
+  /* Width is the one property that animates: it is what makes the inset
+     reflow, and animating it alone keeps the text from reflowing twice. */
+  transition: width var(--dur) var(--ease);
+}
+
+.srag-sb__inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-4);
+  overflow: hidden;
+}
+
+.srag-sb[data-state='collapsed'][data-collapsible='icon'] {
+  width: var(--sidebar-width-icon);
+}
+
+.srag-sb[data-state='collapsed'][data-collapsible='icon'] .srag-sb__inner {
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+}
+
+.srag-sb[data-state='collapsed'][data-collapsible='offcanvas'] {
+  width: 0;
+  border-right-color: transparent;
+}
+
+/* Everything that only makes sense at full width. Collapsing uses
+   display:none rather than opacity so the hidden controls also leave the
+   focus order -- a tab stop you cannot see is worse than a missing one. */
+.srag-sb[data-state='collapsed'] .srag-sb-hide-collapsed,
+.srag-sb[data-state='collapsed'] .srag-sb-label,
+.srag-sb[data-state='collapsed'] .srag-sb__group-label,
+.srag-sb[data-state='collapsed'] .srag-sb__menu-badge {
+  /* !important because some of these elements (the Phosphor glyphs) carry an
+     inline `display: block`, which would otherwise win over this rule. */
+  display: none !important;
+}
+
+/* The mirror of the above: an icon-only stand-in for a block that is too wide
+   for the rail, so nothing the expanded sidebar states disappears entirely. */
+.srag-sb-only-collapsed {
+  display: none;
+}
+
+.srag-sb[data-state='collapsed'] .srag-sb-only-collapsed {
+  display: flex;
+}
+
+/* ---- Regions -------------------------------------------------------------- */
+
+.srag-sb__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 2px var(--space-6);
+  flex-shrink: 0;
+}
+
+.srag-sb__content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: grid;
+  gap: var(--space-6);
+  align-content: start;
+  /* The active-row marker sits 10px outside the row box; give it room rather
+     than letting overflow:hidden clip it. */
+  padding-left: 10px;
+  margin-left: -10px;
+}
+
+.srag-sb__footer {
+  flex-shrink: 0;
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.srag-sb__separator {
+  border: 0;
+  border-top: 1px solid var(--border-nav);
+  margin: 0;
+}
+
+/* ---- Groups --------------------------------------------------------------- */
+
+.srag-sb__group {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.srag-sb__group-label {
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  font-weight: var(--weight-semibold);
+  color: var(--ink-on-nav-muted);
+  opacity: 0.7;
+  padding: 0 12px;
+}
+
+.srag-sb__menu {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.srag-sb__menu-item {
+  position: relative;
+  list-style: none;
+}
+
+/* ---- Rows ----------------------------------------------------------------- */
+
+.srag-sb__menu-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-on-nav-muted);
+  font: inherit;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.srag-sb__menu-button:hover {
+  background: var(--surface-nav-hover);
+  color: var(--ink-on-nav);
+}
+
+.srag-sb__menu-button[data-active='true'] {
+  background: var(--surface-nav-raised);
+  color: var(--ink-on-nav-active);
+  font-weight: var(--weight-semibold);
+}
+
+.srag-sb__menu-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The active row's accent marker, moved out of inline styles. */
+.srag-sb__menu-button[data-active='true']::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+
+.srag-sb__menu-button > .srag-sb-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* In the rail the icon is the whole row, so centre it and drop the gap. */
+.srag-sb[data-state='collapsed'][data-collapsible='icon'] .srag-sb__menu-button {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+  gap: 0;
+}
+
+.srag-sb__menu-badge {
+  margin-left: auto;
+}
+
+/* ---- Rail ----------------------------------------------------------------- */
+
+.srag-sb__rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -8px;
+  width: 16px;
+  z-index: 20;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: ew-resize;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.srag-sb__rail::after {
+  content: '';
+  position: absolute;
+  inset: 0 7px;
+  background: transparent;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.srag-sb__rail:hover::after {
+  background: var(--accent);
+}
+
+.srag-sb[data-mobile='true'] .srag-sb__rail {
+  display: none;
+}
+
+/* ---- Trigger -------------------------------------------------------------- */
+
+/* Shares the app's existing icon-button geometry; `srag-icon-btn` supplies the
+   look, so this only needs to exist for callers that use it bare. */
+.srag-sb-trigger {
+  flex-shrink: 0;
+}
+
+/* ---- Inset ---------------------------------------------------------------- */
+
+.srag-sb-inset {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ---- Mobile sheet --------------------------------------------------------- */
+
+.srag-sb-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+}
+
+.srag-sb-sheet__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: var(--surface-scrim);
+  cursor: pointer;
+}
+
+.srag-sb--mobile {
+  position: relative;
+  width: var(--sidebar-width);
+  max-width: 86vw;
+  height: 100%;
+  box-shadow: 1px 0 0 var(--border-nav);
+}
+
+.srag-sb--mobile:focus {
+  outline: none;
+}
+
+@media (max-width: 420px) {
+  /* A 256px sheet on a 375px screen leaves a 119px scrim. Give it more. */
+  .srag-sb--mobile {
+    width: 86vw;
+    max-width: 300px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .srag-sb {
+    transition: none;
+  }
+}
